@@ -63,4 +63,4 @@ angular.module('odoo')
    }];
 });
 
-angular.module("pickadoo").run(["$templateCache", function($templateCache) {$templateCache.put("app/main/main.html","<div class=\"container\"><input type=\"text\" ng-model=\"login\"> <input type=\"text\" ng-model=\"password\"> <button ng-click=\"loginFn()\">Login</button> <input type=\"text\" ng-model=\"db\"></div>");}]);
+angular.module("odoo").run(["$templateCache", function($templateCache) {$templateCache.put("app/main/main.html","<div class=\"container\"><input type=\"text\" ng-model=\"login\"> <input type=\"text\" ng-model=\"password\"> <button ng-click=\"loginFn()\">Login</button> <input type=\"text\" ng-model=\"db\"></div>");}]);
