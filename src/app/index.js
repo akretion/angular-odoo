@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('pickadoo', ['ngAnimate', 'ngCookies', 'ngTouch', 'ngSanitize', 'ngResource', 'ui.router', 'mgcrea.ngStrap','odoo'])
+angular.module('odoo', ['ngAnimate', 'ngCookies', 'ngTouch', 'ngSanitize', 'ngResource', 'ui.router', 'mgcrea.ngStrap','odoo'])
   .config(function ($stateProvider, $urlRouterProvider) {
     $stateProvider
       .state('home', {
