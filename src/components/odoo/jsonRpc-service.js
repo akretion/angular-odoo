@@ -38,7 +38,7 @@ angular.module('odoo')
         };
 
         odooRpc.searchRead = function(model, domain, fields) {
-            params = {
+            var params = {
                 model: model,
                 domain: domain,
                 fields: fields,
@@ -47,7 +47,7 @@ angular.module('odoo')
         }
 
         odooRpc.call = function(model, method, args, kwargs) {
-            params = {
+            var params = {
                 model: model,
                 method: method,
                 args: args,
