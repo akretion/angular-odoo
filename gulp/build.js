@@ -24,6 +24,31 @@ gulp.task('partials', function () {
     .pipe(gulp.dest(paths.tmp + '/partials/'));
 });
 
+gulp.task('build-lib', ['partials'], function () {
+ return gulp.src([
+     paths.src + '/app/app.js',
+     paths.src + '/components/**/*.js',
+     paths.tmp + '/partials/**/*.js'
+   ])
+     .pipe($.ngAnnotate())
+     .pipe($.concat('odoo.js'))
+     .pipe(gulp.dest(paths.dist + '/'))
+     .pipe($.size({ title: paths.dist + '/', showFiles: true }));
+});
+
+gulp.task('build-lib-min', ['partials'], function () {
+ return gulp.src([
+     paths.src + '/app/app.js',
+     paths.src + '/components/**/*.js',
+     paths.tmp + '/partials/**/*.js'
+   ])
+     .pipe($.ngAnnotate())
+     .pipe($.uglify({preserveComments:$.uglifySaveLicense}))
+     .pipe($.concat('odoo.min.js'))
+     .pipe(gulp.dest(paths.dist + '/'))
+     .pipe($.size({ title: paths.dist + '/', showFiles: true }));
+});
+
 gulp.task('html', ['inject', 'partials'], function () {
   var partialsInjectFile = gulp.src(paths.tmp + '/partials/templateCacheHtml.js', { read: false });
   var partialsInjectOptions = {
