@@ -96,21 +96,21 @@ angular.module('odoo')
 
         odooRpc.getSessionFromCookie = function() {
             //initialisation of the session_id if exist
-                var name = "sid=";
-                var ca = document.cookie.split(';');
-                for(var i=0; i<ca.length; i++) {
-                    var c = ca[i];
-                    while (c.charAt(0)==' ') c = c.substring(1);
-                    if (c.indexOf(name) == 0) {
-                        $rootScope.session_id = c.substring(name.length,c.length);
-                        console.log('CHECKK SSESSSION')
-                        console.log( $rootScope.session_id );
-                        if ( $rootScope.session_id ) {
-                            odooRpc.searchRead( 'res.user', [], ['login'] )
-                        }
+            var name = "sid=";
+            var ca = document.cookie.split(';');
+            for(var i=0; i<ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0)==' ') c = c.substring(1);
+                if (c.indexOf(name) == 0) {
+                    $rootScope.session_id = c.substring(name.length,c.length);
+                    console.log('CHECKK SSESSSION')
+                    console.log( $rootScope.session_id );
+                    if ( $rootScope.session_id ) {
+                        odooRpc.searchRead( 'res.user', [], ['login'] )
                     }
                 }
             }
+        }
 
         odooRpc.clearCookieSession = function () {
             console.log('CALL CLEAR COOKIES');
