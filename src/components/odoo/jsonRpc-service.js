@@ -8,13 +8,13 @@ angular.module('odoo')
         callBackError: function() {},
     };
 
-    this.$get = function($http, $rootScope) {
+    this.$get = function($http, $cookies) {
+
         var odooRpc = this.odooRpc;
 
-        console.log($rootScope);
         odooRpc.sendRequest = function(url, params, callBackDeadSession) {
             var deferred = $.Deferred();
-            params.session_id = $rootScope.session_id
+            params.session_id = $cookies.session_id
             odooRpc.uniq_id_counter += 1;
             var json_data = {
                 jsonrpc: '2.0',
@@ -38,18 +38,16 @@ angular.module('odoo')
                     if ( typeof response.error !== 'undefined' ) {
                         var error = response.error
                         if ( error.code === 300 ) {
-                            console.log("ERRROOOOOR");
-                            console.log(response.error);
                             if ( error.data ) {
                                 if ( error.data.type == "client_exception"
                                         && error.data.debug.match("SessionExpiredException" ) ) {
-                                console.log('session dead');
-                                odooRpc.clearCookieSession();
+                                $cookies.session_id = "";
+                                deferred.reject('session_expired');
                                 } else {
-                                    callBackError( error )
+                                    callBackError( error );
+                                    deferred.reject(response.result);
                                 }
                             }
-                            deferred.reject(response.result);
                         }
                     } else {
                         deferred.resolve(response.result);
@@ -65,10 +63,9 @@ angular.module('odoo')
                 password : password
             };
             return odooRpc.sendRequest('/web/session/authenticate', params)
-                .then(
+                .done(
                     function( result ) {
-                        $rootScope.session_id = result.session_id;
-                        return true
+                        $cookies.session_id = result.session_id;
                 })
         };
 
@@ -91,32 +88,10 @@ angular.module('odoo')
             return odooRpc.sendRequest('/web/dataset/call_kw', params);
         }
 
-        odooRpc.getSessionFromCookie = function() {
-            //initialisation of the session_id if exist
-            var name = "sid=";
-            var ca = document.cookie.split(';');
-            for(var i=0; i<ca.length; i++) {
-                var c = ca[i];
-                while (c.charAt(0)==' ') c = c.substring(1);
-                if (c.indexOf(name) == 0) {
-                    $rootScope.session_id = c.substring(name.length,c.length);
-                    console.log('CHECKK SSESSSION')
-                    console.log( $rootScope.session_id );
-                    if ( $rootScope.session_id ) {
-                        odooRpc.searchRead( 'res.user', [], ['login'] )
-                    }
-                }
-            }
+        odooRpc.get_session_info = function(model, method, args, kwargs) {
+            return odooRpc.sendRequest('/web/session/get_session_info', {});
         }
 
-        odooRpc.clearCookieSession = function () {
-            console.log('CALL CLEAR COOKIES');
-            function delete_cookie( name ) {
-              document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-            }
-            delete_cookie("sid")
-            $rootScope.session_id = "";
-        }
         return odooRpc;
    };
 });
