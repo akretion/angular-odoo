@@ -8,7 +8,7 @@ angular.module('odoo')
         callBackError: function() {},
     };
 
-    this.$get = function($http, $cookies) {
+    this.$get = function($http, $cookies, $rootScope) {
 
         var odooRpc = this.odooRpc;
 
@@ -37,17 +37,35 @@ angular.module('odoo')
                     console.log(response);
                     if ( typeof response.error !== 'undefined' ) {
                         var error = response.error
-                        if ( error.code === 300 ) {
-                            if ( error.data ) {
-                                if ( error.data.type == "client_exception"
-                                        && error.data.debug.match("SessionExpiredException" ) ) {
-                                $cookies.session_id = "";
-                                deferred.reject('session_expired');
-                                } else {
-                                    callBackError( error );
-                                    deferred.reject(response.result);
-                                }
+                        if ( error.code === 300 && error.data
+                                && error.data.type == "client_exception"
+                                && error.data.debug.match("SessionExpiredException" ) ) {
+                            $cookies.session_id = "";
+                            deferred.reject('session_expired');
+                        } else {
+                            var split = ("" + error.data.fault_code).split('\n')[0].split(' -- ');
+                            if (split.length > 1) {
+                                error.type = split.shift();
+                                error.data.fault_code = error.data.fault_code.substr(error.type.length + 4);
                             }
+
+                            if ( error.code === 200 && error.type ) {
+                                console.log(error);
+                                $rootScope.modal({
+                                    title: error.type,
+                                    show: true,
+                                    content: error.data.fault_code.replace(/\n/g, "<br />"),
+                                    html: true,
+                                });
+                            } else {
+                                $rootScope.modal({
+                                    title: error.message,
+                                    content: error.data.debug.replace(/\n/g, "<br />"),
+                                    show: true,
+                                    html: true,
+                                });
+                            };
+                            deferred.reject(error);
                         }
                     } else {
                         deferred.resolve(response.result);
