@@ -33,8 +33,6 @@ angular.module('odoo')
 
             $http( request )
                 .success( function( response ) {
-                    console.log('SUCCESS');
-                    console.log(response);
                     if ( typeof response.error !== 'undefined' ) {
                         var error = response.error
                         if ( error.code === 300 && error.data
@@ -50,7 +48,6 @@ angular.module('odoo')
                             }
 
                             if ( error.code === 200 && error.type ) {
-                                console.log(error);
                                 $rootScope.modal({
                                     title: error.type,
                                     show: true,
@@ -68,7 +65,21 @@ angular.module('odoo')
                             deferred.reject(error);
                         }
                     } else {
-                        deferred.resolve(response.result);
+                        var result = response.result;
+                        if ( result.type === "ir.actions.act_proxy" ) {
+                            angular.forEach(result.action_list, function( action ) {
+                                var request = {
+                                    'method' : 'POST',
+                                    'url' : action['url'],
+                                    'data' : JSON.stringify(action['params']),
+                                    'headers': {
+                                        'Content-Type' : 'application/json'
+                                        },
+                                }
+                                $http( request );
+                            });
+                        };
+                        deferred.resolve(result);
                     }
             })
             return deferred.promise();
