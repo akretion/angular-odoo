@@ -41,7 +41,7 @@ angular.module('odoo')
                         if ( error.code === 300 && error.data
                                 && error.data.type == "client_exception"
                                 && error.data.debug.match("SessionExpiredException" ) ) {
-                            $cookies.session_id = "";
+                            delete $cookies["session_id"];
                             deferred.reject('session_expired');
                         } else {
                             var split = ("" + error.data.fault_code).split('\n')[0].split(' -- ');
@@ -89,16 +89,27 @@ angular.module('odoo')
         };
 
         odooRpc.login = function(db, login, password) {
+            var deferred = $.Deferred();
             var params = {
                 db : db,
                 login : login,
                 password : password
             };
-            return odooRpc.sendRequest('/web/session/authenticate', params)
+            odooRpc.sendRequest('/web/session/authenticate', params)
                 .done(
                     function( result ) {
-                        $cookies.session_id = result.session_id;
+                        if ( result.uid ) {
+                            $cookies.session_id = result.session_id;
+                            deferred.resolve(result);
+                        } else {
+                            deferred.reject(result);
+                        }
+
                 })
+                .fail(function( result ) {
+                    deferred.reject(error);
+                });
+            return deferred.promise();
         };
 
         odooRpc.searchRead = function(model, domain, fields) {
