@@ -8,12 +8,12 @@ angular.module('odoo')
         callBackError: function() {},
     };
 
-    this.$get = function($http, $cookies, $rootScope) {
+    this.$get = function($http, $cookies, $rootScope, $q) {
 
         var odooRpc = this.odooRpc;
 
         odooRpc.sendRequest = function(url, params, callBackDeadSession) {
-            var deferred = $.Deferred();
+            var deferred = $q.defer();
             params.session_id = $cookies.session_id
             odooRpc.uniq_id_counter += 1;
             var json_data = {
@@ -82,7 +82,7 @@ angular.module('odoo')
                         deferred.resolve(result);
                     }
             })
-            return deferred.promise();
+            return deferred.promise;
         };
 
         odooRpc.login = function(db, login, password) {
