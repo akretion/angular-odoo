@@ -11,12 +11,12 @@ angular.module('odoo')
         callBackError: function() {},
     };
 
-    this.$get = ["$http", "$cookies", "$rootScope", function($http, $cookies, $rootScope) {
+    this.$get = ["$http", "$cookies", "$rootScope", "$q", function($http, $cookies, $rootScope, $q) {
 
         var odooRpc = this.odooRpc;
 
         odooRpc.sendRequest = function(url, params, callBackDeadSession) {
-            var deferred = $.Deferred();
+            var deferred = $q.defer();
             params.session_id = $cookies.session_id
             odooRpc.uniq_id_counter += 1;
             var json_data = {
@@ -49,23 +49,27 @@ angular.module('odoo')
                                 error.type = split.shift();
                                 error.data.fault_code = error.data.fault_code.substr(error.type.length + 4);
                             }
-
+                            var errorMessage = undefined;
+                            var errorTitle = undefined;
                             if ( error.code === 200 && error.type ) {
-                                $rootScope.modal({
-                                    title: error.type,
-                                    show: true,
-                                    content: error.data.fault_code.replace(/\n/g, "<br />"),
-                                    html: true,
-                                });
+                                errorTitle = error.type;
+                                errorMessage = error.data.fault_code.replace(/\n/g, "<br />");
                             } else {
-                                $rootScope.modal({
-                                    title: error.message,
-                                    content: error.data.debug.replace(/\n/g, "<br />"),
-                                    show: true,
-                                    html: true,
-                                });
+                                errorTitle = error.message;
+                                errorMessage = error.data.debug.replace(/\n/g, "<br />");
                             };
-                            deferred.reject(error);
+                            $rootScope.modal({
+                                title: errorTitle,
+                                show: true,
+                                content: errorMessage,
+                                html: true,
+                            });
+                            deferred.reject({
+                                'title': errorTitle,
+                                'message': errorMessage,
+                                'fullTrace': error
+                            });
+
                         }
                     } else {
                         var result = response.result;
@@ -85,7 +89,7 @@ angular.module('odoo')
                         deferred.resolve(result);
                     }
             })
-            return deferred.promise();
+            return deferred.promise;
         };
 
         odooRpc.login = function(db, login, password) {
