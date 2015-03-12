@@ -6,6 +6,7 @@ angular.module('odoo')
         uniq_id_counter: 0,
         callBackDeadSession: function() {},
         callBackError: function() {},
+        context: {},
     };
 
     this.$get = function($http, $cookies, $rootScope, $q) {
@@ -97,19 +98,21 @@ angular.module('odoo')
                 password : password
             };
             odooRpc.sendRequest('/web/session/authenticate', params)
-                .done(
+                .then(
                     function( result ) {
                         if ( result.uid ) {
                             $cookies.session_id = result.session_id;
                             deferred.resolve(result);
+                            console.log(result);
+                            odooRpc.context=result.user_context;
                         } else {
                             deferred.reject(result);
-                        }
-
-                })
-                .fail(function( result ) {
-                    deferred.reject(error);
-                });
+                        };
+                    },
+                    function( result ) {
+                        deferred.reject(error);
+                    }
+                );
             return deferred.promise();
         };
 
@@ -123,6 +126,14 @@ angular.module('odoo')
         }
 
         odooRpc.call = function(model, method, args, kwargs) {
+            if ( ! kwargs ) {
+                kwargs = {}
+            }
+            if ( kwargs.context ) {
+                kwargs.context.extend(OdooRpc.context)
+            } else {
+                kwargs.context = odooRpc.context
+            }
             var params = {
                 model: model,
                 method: method,
