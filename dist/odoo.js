@@ -9,7 +9,7 @@ angular.module('odoo')
         uniq_id_counter: 0,
         callBackDeadSession: function() {},
         callBackError: function() {},
-        context: {},
+        context: {'lang': 'fr_FR'},
     };
 
     this.$get = ["$http", "$cookies", "$rootScope", "$q", function($http, $cookies, $rootScope, $q) {
@@ -150,6 +150,27 @@ angular.module('odoo')
             return odooRpc.sendRequest('/web/session/get_session_info', {});
         }
 
+        odooRpc.syncDataImport = function(model, func_key, domain, limit) {
+            if ( $cookies.session_id && $cookies.session_id !== "") {
+                odooRpc.call(model, 'get_sync_data', [
+                    func_key, $rootScope.timekey, domain, limit
+                ], {}).then(
+                    function(result) {
+                        var res = result[0];
+                        $rootScope.timekey = result[1];
+                        var remove_ids = result[2];
+                        if(!$.isEmptyObject(res)) {
+                            angular.extend($rootScope.items, res);
+                            odooRpc.syncDataImport(model, func_key, domain, limit);
+                        }
+                        if(!$.isEmptyObject(remove_ids)) {
+                            angular.forEach(remove_ids, function(id){
+                                delete $rootScope.items[id]
+                            })
+                        }
+                    })
+                }
+            };
         return odooRpc;
    }];
 });
