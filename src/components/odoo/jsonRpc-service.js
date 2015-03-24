@@ -1,8 +1,9 @@
 'use strict';
 angular.module('odoo')
-   .provider('jsonRpc', function() {
+   .provider('jsonRpc', function jsonRpcProvider() {
 
     this.odooRpc = {
+        odoo_server: "///localhost",
         uniq_id_counter: 0,
         callBackDeadSession: function() {},
         callBackError: function() {},
@@ -24,7 +25,7 @@ angular.module('odoo')
             };
             var request = {
                 'method' : 'POST',
-                'url' : url,
+                'url' : odooRpc.odoo_server + url,
                 'data' : JSON.stringify(json_data),
                 'headers': {
                     'Content-Type' : 'application/json'
@@ -39,7 +40,7 @@ angular.module('odoo')
                         if ( error.code === 300 && error.data
                                 && error.data.type == "client_exception"
                                 && error.data.debug.match("SessionExpiredException" ) ) {
-                            delete $cookies["session_id"];
+                            delete $cookies.session_id;
                             deferred.reject('session_expired');
                         } else {
                             var split = ("" + error.data.fault_code).split('\n')[0].split(' -- ');
@@ -75,7 +76,7 @@ angular.module('odoo')
                             angular.forEach(result.action_list, function( action ) {
                                 var request = {
                                     'method' : 'POST',
-                                    'url' : action['url'],
+                                    'url' : odooRpc.odoo_server + action['url'],
                                     'data' : JSON.stringify(action['params']),
                                     'headers': {
                                         'Content-Type' : 'application/json'
@@ -106,6 +107,7 @@ angular.module('odoo')
                             console.log(result);
                             odooRpc.context=result.user_context;
                         } else {
+                            delete $cookies.session_id;
                             deferred.reject(result);
                         };
                     },
@@ -114,6 +116,10 @@ angular.module('odoo')
                     }
                 );
             return deferred.promise();
+        };
+
+        odooRpc.logout = function () {
+           delete $cookies.session_id;
         };
 
         odooRpc.searchRead = function(model, domain, fields) {
@@ -146,7 +152,26 @@ angular.module('odoo')
         odooRpc.get_session_info = function(model, method, args, kwargs) {
             return odooRpc.sendRequest('/web/session/get_session_info', {});
         }
-
+        
+        odooRpc.syncDataImport = function(model, func_key, domain, limit) {
+            return odooRpc.call(model, 'get_sync_data', [
+                func_key, $rootScope.timekey, domain, limit
+            ], {}).then(
+                function(result) {
+                    var res = result[0];
+                    $rootScope.timekey = result[1];
+                    var remove_ids = result[2];
+                    if(!$.isEmptyObject(res)) {
+                        angular.extend($rootScope.items, res);
+                        odooRpc.syncDataImport(model, func_key, domain, limit);
+                    }
+                    if(!$.isEmptyObject(remove_ids)) {
+                        angular.forEach(remove_ids, function(id){
+                            delete $rootScope.items[id]
+                        });
+                    }
+            });
+        };
         return odooRpc;
    };
 });
