@@ -1,8 +1,9 @@
 'use strict';
 angular.module('odoo')
-   .provider('jsonRpc', function() {
+   .provider('jsonRpc', function jsonRpcProvider() {
 
     this.odooRpc = {
+        odoo_server: "///localhost",
         uniq_id_counter: 0,
         callBackDeadSession: function() {},
         callBackError: function() {},
@@ -24,7 +25,7 @@ angular.module('odoo')
             };
             var request = {
                 'method' : 'POST',
-                'url' : url,
+                'url' : odooRpc.odoo_server + url,
                 'data' : JSON.stringify(json_data),
                 'headers': {
                     'Content-Type' : 'application/json'
@@ -75,7 +76,7 @@ angular.module('odoo')
                             angular.forEach(result.action_list, function( action ) {
                                 var request = {
                                     'method' : 'POST',
-                                    'url' : action['url'],
+                                    'url' : odooRpc.odoo_server + action['url'],
                                     'data' : JSON.stringify(action['params']),
                                     'headers': {
                                         'Content-Type' : 'application/json'
