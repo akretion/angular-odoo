@@ -40,7 +40,7 @@ angular.module('odoo')
                         if ( error.code === 300 && error.data
                                 && error.data.type == "client_exception"
                                 && error.data.debug.match("SessionExpiredException" ) ) {
-                            delete $cookies["session_id"];
+                            delete $cookies.session_id;
                             deferred.reject('session_expired');
                         } else {
                             var split = ("" + error.data.fault_code).split('\n')[0].split(' -- ');
