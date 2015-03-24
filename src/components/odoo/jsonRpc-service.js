@@ -117,6 +117,9 @@ angular.module('odoo')
                 );
             return deferred.promise();
         };
+        odooRpc.isLoggedIn = function () {
+            return $cookies.session_id && $cookies.session_id.length > 10;
+        }
 
         odooRpc.logout = function () {
            delete $cookies.session_id;
