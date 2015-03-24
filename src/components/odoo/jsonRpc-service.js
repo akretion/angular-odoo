@@ -107,6 +107,7 @@ angular.module('odoo')
                             console.log(result);
                             odooRpc.context=result.user_context;
                         } else {
+                            delete $cookies.session_id;
                             deferred.reject(result);
                         };
                     },
