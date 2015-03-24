@@ -148,7 +148,26 @@ angular.module('odoo')
         odooRpc.get_session_info = function(model, method, args, kwargs) {
             return odooRpc.sendRequest('/web/session/get_session_info', {});
         }
-
+        
+        odooRpc.syncDataImport = function(model, func_key, domain, limit) {
+            return odooRpc.call(model, 'get_sync_data', [
+                func_key, $rootScope.timekey, domain, limit
+            ], {}).then(
+                function(result) {
+                    var res = result[0];
+                    $rootScope.timekey = result[1];
+                    var remove_ids = result[2];
+                    if(!$.isEmptyObject(res)) {
+                        angular.extend($rootScope.items, res);
+                        odooRpc.syncDataImport(model, func_key, domain, limit);
+                    }
+                    if(!$.isEmptyObject(remove_ids)) {
+                        angular.forEach(remove_ids, function(id){
+                            delete $rootScope.items[id]
+                        });
+                    }
+            });
+        };
         return odooRpc;
    };
 });
