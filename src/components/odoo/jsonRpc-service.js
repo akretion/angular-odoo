@@ -3,11 +3,11 @@ angular.module('odoo')
    .provider('jsonRpc', function jsonRpcProvider() {
 
     this.odooRpc = {
-        odoo_server: "///localhost",
+        odoo_server: "",
         uniq_id_counter: 0,
         callBackDeadSession: function() {},
         callBackError: function() {},
-        context: {},
+        context: {'lang': 'fr_FR'},
     };
 
     this.$get = function($http, $cookies, $rootScope, $q) {
