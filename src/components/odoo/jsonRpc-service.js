@@ -118,6 +118,10 @@ angular.module('odoo')
             return deferred.promise();
         };
 
+        odooRpc.logout = function () {
+           delete $cookies.session_id;
+        };
+
         odooRpc.searchRead = function(model, domain, fields) {
             var params = {
                 model: model,
