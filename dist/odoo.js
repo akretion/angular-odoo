@@ -13,7 +13,7 @@ angular.module('odoo')
         context: {'lang': 'fr_FR'},
     };
 
-    this.$get = ["$http", "$cookies", "$rootScope", "$q", function($http, $cookies, $rootScope, $q) {
+    this.$get = ["$http", "$cookies", "$rootScope", "$q", "$interval", function($http, $cookies, $rootScope, $q, $interval) {
 
         var odooRpc = this.odooRpc;
 
@@ -159,25 +159,52 @@ angular.module('odoo')
             return odooRpc.sendRequest('/web/session/get_session_info', {});
         }
         
-        odooRpc.syncDataImport = function(model, func_key, domain, limit) {
+        odooRpc.syncDataImport = function(model, func_key, domain, limit, object) {
             return odooRpc.call(model, 'get_sync_data', [
-                func_key, $rootScope.timekey, domain, limit
+                func_key, object.timekey, domain, limit
             ], {}).then(
                 function(result) {
                     var res = result[0];
-                    $rootScope.timekey = result[1];
+                    object.timekey = result[1];
                     var remove_ids = result[2];
                     if(!$.isEmptyObject(res)) {
-                        angular.extend($rootScope.items, res);
-                        odooRpc.syncDataImport(model, func_key, domain, limit);
+                        angular.extend(object.data, res);
+                        odooRpc.syncDataImport(model, func_key, domain, limit, object);
                     }
                     if(!$.isEmptyObject(remove_ids)) {
                         angular.forEach(remove_ids, function(id){
-                            delete $rootScope.items[id]
+                            delete object.data[id]
                         });
                     }
             });
         };
+
+        odooRpc.syncImportObject = function(params) {
+            /* params = {
+                    model: 'odoo.model',
+                    func_key: 'my_function_key',
+                    domain: [],
+                    limit: 50,
+                    interval: 5000,
+                    }
+
+             return a synchronized object where you can access
+             to the data using object.data
+             */
+            var object = { data: {}, timekey: null };
+
+            var sync = function() {
+                odooRpc.syncDataImport(
+                    params.model,
+                    params.func_key,
+                    params.domain,
+                    params.limit,
+                    object)
+            }
+            $interval(sync, params.interval);
+            return object;
+        }
+
         return odooRpc;
    }];
 });
