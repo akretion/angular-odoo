@@ -57,12 +57,7 @@ angular.module('odoo')
                                 errorTitle = error.message;
                                 errorMessage = error.data.debug.replace(/\n/g, "<br />");
                             };
-                            $rootScope.modal({
-                                title: errorTitle,
-                                show: true,
-                                content: errorMessage,
-                                html: true,
-                            });
+
                             deferred.reject({
                                 'title': errorTitle,
                                 'message': errorMessage,
