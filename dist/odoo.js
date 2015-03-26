@@ -40,36 +40,39 @@ angular.module('odoo')
             $http( request )
                 .success( function( response ) {
                     if ( typeof response.error !== 'undefined' ) {
-                        var error = response.error
+
+                        var error = response.error;
+                        var errorObj = {
+                            title: '',
+                            message:'',
+                            fullTrace: error
+                        };
+
                         if ( error.code === 300 && error.data
                                 && error.data.type == "client_exception"
                                 && error.data.debug.match("SessionExpiredException" ) ) {
+                            console.log('session exipre with ',$cookies.session_id);
                             delete $cookies.session_id;
-                            deferred.reject('session_expired');
-                            odooRpc.interceptors.forEach(function (i) { i('session_expired') });
+
+                            errorObj.title ='session_expired'; 
                         } else {
                             var split = ("" + error.data.fault_code).split('\n')[0].split(' -- ');
                             if (split.length > 1) {
                                 error.type = split.shift();
                                 error.data.fault_code = error.data.fault_code.substr(error.type.length + 4);
                             }
-                            var errorMessage = undefined;
-                            var errorTitle = undefined;
+
                             if ( error.code === 200 && error.type ) {
-                                errorTitle = error.type;
-                                errorMessage = error.data.fault_code.replace(/\n/g, "<br />");
+                                errorObj.title = error.type;
+                                errorObj.message = error.data.fault_code.replace(/\n/g, "<br />");
                             } else {
-                                errorTitle = error.message;
-                                errorMessage = error.data.debug.replace(/\n/g, "<br />");
+                                errorObj.title = error.message;
+                                errorObj.message = error.data.debug.replace(/\n/g, "<br />");
                             };
-
-                            deferred.reject({
-                                'title': errorTitle,
-                                'message': errorMessage,
-                                'fullTrace': error
-                            });
-
                         }
+                        deferred.reject(errorObj);
+                        odooRpc.interceptors.forEach(function (i) { i(errorObj); });
+
                     } else {
                         var result = response.result;
                         if ( result.type === "ir.actions.act_proxy" ) {
@@ -88,8 +91,9 @@ angular.module('odoo')
                         deferred.resolve(result);
                     }
             }).error(function (reason) {
-                odooRpc.interceptors.forEach(function (i) { i(reason) });
-                deferred.reject(reason);
+                var errorObj = {title:'http', fullTrace: reason, message:'HTTP Error'};
+                odooRpc.interceptors.forEach(function (i) { i(errorObj); });
+                deferred.reject(errorObj);
             });
             return deferred.promise;
         };
@@ -165,17 +169,23 @@ angular.module('odoo')
             ], {}).then(
                 function(result) {
                     var res = result[0];
+                    if (object.timekey !== result[1])
+                        return;
                     object.timekey = result[1];
                     var remove_ids = result[2];
                     if(!$.isEmptyObject(res)) {
+                        res.forEach(function () {
+
+                        });
                         angular.extend(object.data, res);
-                        odooRpc.syncDataImport(model, func_key, domain, limit, object);
                     }
                     if(!$.isEmptyObject(remove_ids)) {
                         angular.forEach(remove_ids, function(id){
                             delete object.data[id]
                         });
                     }
+                    if (res.lenght)
+                    odooRpc.syncDataImport(model, func_key, domain, limit, object);
             });
         };
 
@@ -193,15 +203,28 @@ angular.module('odoo')
              */
             var object = { data: {}, timekey: null };
 
-            var sync = function() {
-                odooRpc.syncDataImport(
+            function sync() {
+                console.log('sync', params.interval);
+                return odooRpc.syncDataImport(
                     params.model,
                     params.func_key,
                     params.domain,
                     params.limit,
-                    object)
+                    object);
             }
-            $interval(sync, params.interval);
+
+            //run once and continue on success with $interval
+            sync().then(function () {
+                var interval; 
+                interval = $interval(function () {
+                        sync().then(null, function (error) { //stop $interval if error
+                            console.log('stop interval', error);
+                            $interval.cancel(interval);
+                        });
+                    }, params.interval);
+            }, function (error) {
+                console.log('stop because error');
+            });
             return object;
         }
 
