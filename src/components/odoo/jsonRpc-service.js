@@ -92,7 +92,7 @@ angular.module('odoo')
         };
 
         odooRpc.login = function(db, login, password) {
-            var deferred = $.Deferred();
+            var deferred = $q.defer();
             var params = {
                 db : db,
                 login : login,
@@ -115,7 +115,7 @@ angular.module('odoo')
                         deferred.reject(error);
                     }
                 );
-            return deferred.promise();
+            return deferred.promise;
         };
         odooRpc.isLoggedIn = function () {
             return $cookies.session_id && $cookies.session_id.length > 10;
