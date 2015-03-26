@@ -107,7 +107,7 @@ angular.module('odoo')
                         };
                     },
                     function( result ) {
-                        deferred.reject(error);
+                        deferred.reject(result);
                     }
                 );
             return deferred.promise;
