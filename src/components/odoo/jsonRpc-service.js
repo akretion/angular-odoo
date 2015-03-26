@@ -8,6 +8,7 @@ angular.module('odoo')
         callBackDeadSession: function() {},
         callBackError: function() {},
         context: {'lang': 'fr_FR'},
+        interceptors: []
     };
 
     this.$get = function($http, $cookies, $rootScope, $q, $interval) {
@@ -42,6 +43,7 @@ angular.module('odoo')
                                 && error.data.debug.match("SessionExpiredException" ) ) {
                             delete $cookies.session_id;
                             deferred.reject('session_expired');
+                            odooRpc.interceptors.forEach(function (i) { i('session_expired') });
                         } else {
                             var split = ("" + error.data.fault_code).split('\n')[0].split(' -- ');
                             if (split.length > 1) {
@@ -82,7 +84,10 @@ angular.module('odoo')
                         };
                         deferred.resolve(result);
                     }
-            })
+            }).error(function (reason) {
+                odooRpc.interceptors.forEach(function (i) { i(reason) });
+                deferred.reject(reason);
+            });
             return deferred.promise;
         };
 
