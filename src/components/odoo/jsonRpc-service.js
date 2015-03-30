@@ -181,7 +181,7 @@ angular.module('odoo')
                             delete object.data[id]
                         });
                     }
-                    if (res.lenght)
+                    if (res.length)
                     odooRpc.syncDataImport(model, func_key, domain, limit, object);
             });
         };
