@@ -171,9 +171,6 @@ angular.module('odoo')
                     object.timekey = result[1];
                     var remove_ids = result[2];
                     if(!$.isEmptyObject(res)) {
-                        res.forEach(function () {
-
-                        });
                         angular.extend(object.data, res);
                     }
                     if(!$.isEmptyObject(remove_ids)) {
