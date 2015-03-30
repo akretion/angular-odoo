@@ -11,7 +11,7 @@ angular.module('odoo')
         interceptors: []
     };
 
-    this.$get = function($http, $cookies, $rootScope, $q, $interval) {
+    this.$get = function($http, $cookies, $rootScope, $q, $timeout) {
 
         var odooRpc = this.odooRpc;
 
@@ -204,21 +204,10 @@ angular.module('odoo')
                     params.func_key,
                     params.domain,
                     params.limit,
-                    object);
-            }
+                    object).then(function () { $timeout(sync, params.interval); } );
+           }
+            sync();
 
-            //run once and continue on success with $interval
-            sync().then(function () {
-                var interval; 
-                interval = $interval(function () {
-                        sync().then(null, function (error) { //stop $interval if error
-                            console.log('stop interval', error);
-                            $interval.cancel(interval);
-                        });
-                    }, params.interval);
-            }, function (error) {
-                console.log('stop because error');
-            });
             return object;
         }
 
