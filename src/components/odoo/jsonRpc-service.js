@@ -166,7 +166,7 @@ angular.module('odoo')
             ], {}).then(
                 function(result) {
                     var res = result[0];
-                    if (object.timekey !== result[1])
+                    if (object.timekey === result[1])
                         return;
                     object.timekey = result[1];
                     var remove_ids = result[2];
