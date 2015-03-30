@@ -165,21 +165,19 @@ angular.module('odoo')
                 func_key, object.timekey, domain, limit
             ], {}).then(
                 function(result) {
-                    var res = result[0];
-                    if (object.timekey === result[1])
+                    if (object.timekey === result.timekey)
                         return;
-                    object.timekey = result[1];
-                    var remove_ids = result[2];
-                    if(!$.isEmptyObject(res)) {
-                        angular.extend(object.data, res);
+                    object.timekey = result.timekey; 
+                    if(!$.isEmptyObject(result.data)) {
+                        angular.extend(object.data, result.data);
                     }
-                    if(!$.isEmptyObject(remove_ids)) {
-                        angular.forEach(remove_ids, function(id){
+                    if(!$.isEmptyObject(object.remove_ids)) {
+                        angular.forEach(object.remove_ids, function(id){
                             delete object.data[id]
                         });
                     }
-                    if (res.length)
-                    odooRpc.syncDataImport(model, func_key, domain, limit, object);
+                    if (result.data.length)
+                    	odooRpc.syncDatresaImport(model, func_key, domain, limit, object);
             });
         };
 
