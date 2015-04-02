@@ -200,7 +200,7 @@ angular.module('odoo')
 
             var object = { 
                 data: {}, 
-                timekey: null, 
+                timekey: undefined,
                 stopCallback: function () {
                     stop = true;
                 }
