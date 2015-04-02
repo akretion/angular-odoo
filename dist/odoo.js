@@ -196,7 +196,15 @@ angular.module('odoo')
              return a synchronized object where you can access
              to the data using object.data
              */
-            var object = { data: {}, timekey: null };
+            var stop = false;
+
+            var object = { 
+                data: {}, 
+                timekey: null, 
+                stopCallback: function () {
+                    stop = true;
+                }
+            };
 
             function sync() {
                 console.log('sync', params.interval);
@@ -205,8 +213,11 @@ angular.module('odoo')
                     params.func_key,
                     params.domain,
                     params.limit,
-                    object).then(function () { $timeout(sync, params.interval); } );
-           }
+                    object).then(function () { 
+                        if (!stop)
+                            $timeout(sync, params.interval);
+                    });
+            }
             sync();
 
             return object;
