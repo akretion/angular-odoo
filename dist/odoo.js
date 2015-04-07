@@ -180,7 +180,7 @@ angular.module('odoo')
                         });
                     }
                     if (result.data.length)
-                    	odooRpc.syncDatresaImport(model, func_key, domain, limit, object);
+                    	odooRpc.syncDataImport(model, func_key, domain, limit, object);
             });
         };
 
@@ -211,7 +211,6 @@ angular.module('odoo')
 
             function sync() {
 
-                console.log('sync', params.interval);
                 odooRpc.syncDataImport(
                     params.model,
                     params.func_key,
