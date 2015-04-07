@@ -194,18 +194,22 @@ angular.module('odoo')
              to the data using object.data
              */
             var stop = false;
-
+            var watchers = [];
             var object = { 
                 data: {}, 
-                timekey: undefined,
+                timekey: null, 
                 stopCallback: function () {
                     stop = true;
+                },
+                watch: function(fun) {
+                    watchers.push(fun);
                 }
             };
 
             function sync() {
+
                 console.log('sync', params.interval);
-                return odooRpc.syncDataImport(
+                odooRpc.syncDataImport(
                     params.model,
                     params.func_key,
                     params.domain,
@@ -213,7 +217,11 @@ angular.module('odoo')
                     object).then(function () { 
                         if (!stop)
                             $timeout(sync, params.interval);
+                }).then(function(data) {
+                    watchers.forEach(function (fun) {
+                        fun(data);
                     });
+                });
             }
             sync();
 
@@ -223,3 +231,4 @@ angular.module('odoo')
         return odooRpc;
    };
 });
+
