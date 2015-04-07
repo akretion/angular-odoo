@@ -14,7 +14,7 @@ angular.module('odoo')
         interceptors: []
     };
 
-    this.$get = ["$http", "$cookies", "$rootScope", "$q", "$interval", function($http, $cookies, $rootScope, $q, $interval) {
+    this.$get = ["$http", "$cookies", "$rootScope", "$q", "$timeout", function($http, $cookies, $rootScope, $q, $timeout) {
 
         var odooRpc = this.odooRpc;
 
@@ -168,24 +168,19 @@ angular.module('odoo')
                 func_key, object.timekey, domain, limit
             ], {}).then(
                 function(result) {
-                    var res = result[0];
-                    if (object.timekey !== result[1])
+                    if (object.timekey === result.timekey)
                         return;
-                    object.timekey = result[1];
-                    var remove_ids = result[2];
-                    if(!$.isEmptyObject(res)) {
-                        res.forEach(function () {
-
-                        });
-                        angular.extend(object.data, res);
+                    object.timekey = result.timekey; 
+                    if(!$.isEmptyObject(result.data)) {
+                        angular.extend(object.data, result.data);
                     }
-                    if(!$.isEmptyObject(remove_ids)) {
-                        angular.forEach(remove_ids, function(id){
+                    if(!$.isEmptyObject(object.remove_ids)) {
+                        angular.forEach(object.remove_ids, function(id){
                             delete object.data[id]
                         });
                     }
-                    if (res.lenght)
-                    odooRpc.syncDataImport(model, func_key, domain, limit, object);
+                    if (result.data.length)
+                    	odooRpc.syncDataImport(model, func_key, domain, limit, object);
             });
         };
 
@@ -201,33 +196,41 @@ angular.module('odoo')
              return a synchronized object where you can access
              to the data using object.data
              */
-            var object = { data: {}, timekey: null };
+            var stop = false;
+            var watchers = [];
+            var object = { 
+                data: {}, 
+                timekey: null, 
+                stopCallback: function () {
+                    stop = true;
+                },
+                watch: function(fun) {
+                    watchers.push(fun);
+                }
+            };
 
             function sync() {
-                console.log('sync', params.interval);
-                return odooRpc.syncDataImport(
+
+                odooRpc.syncDataImport(
                     params.model,
                     params.func_key,
                     params.domain,
                     params.limit,
-                    object);
+                    object).then(function () { 
+                        if (!stop)
+                            $timeout(sync, params.interval);
+                }).then(function(data) {
+                    watchers.forEach(function (fun) {
+                        fun(data);
+                    });
+                });
             }
+            sync();
 
-            //run once and continue on success with $interval
-            sync().then(function () {
-                var interval; 
-                interval = $interval(function () {
-                        sync().then(null, function (error) { //stop $interval if error
-                            console.log('stop interval', error);
-                            $interval.cancel(interval);
-                        });
-                    }, params.interval);
-            }, function (error) {
-                console.log('stop because error');
-            });
             return object;
         }
 
         return odooRpc;
    }];
 });
+
