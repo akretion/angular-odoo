@@ -1,5 +1,5 @@
 'use strict';
-angular.module('odoo', []);
+angular.module('odoo', ['ngCookies']);
 
 'use strict';
 angular.module('odoo')
