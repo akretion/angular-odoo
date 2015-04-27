@@ -1,233 +1,280 @@
 'use strict';
-angular.module('odoo')
-   .provider('jsonRpc', function jsonRpcProvider() {
+angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 
-    this.odooRpc = {
-        odoo_server: "",
-        uniq_id_counter: 0,
-        callBackDeadSession: function() {},
-        callBackError: function() {},
-        context: {'lang': 'fr_FR'},
-        interceptors: []
-    };
+	this.odooRpc = {
+		odoo_server: "",
+		uniq_id_counter: 0,
+		context: {'lang': 'fr_FR'},
+		shouldManageSessionId: false, //try without first
+	};
 
-    this.$get = function($http, $cookies, $rootScope, $q, $timeout) {
+	var preflightPromise = null;
 
-        var odooRpc = this.odooRpc;
+	this.$get = function($http, $cookies, $q, $timeout) {
 
-        odooRpc.sendRequest = function(url, params, callBackDeadSession) {
-            var deferred = $q.defer();
-            params.session_id = $cookies.session_id
-            odooRpc.uniq_id_counter += 1;
-            var json_data = {
-                jsonrpc: '2.0',
-                method: 'call',
-                params: params,
-            };
-            var request = {
-                'method' : 'POST',
-                'url' : odooRpc.odoo_server + url,
-                'data' : JSON.stringify(json_data),
-                'headers': {
-                    'Content-Type' : 'application/json'
-                    },
-                'id': ("r" + odooRpc.uniq_id_counter),
-            };
+		var odooRpc = this.odooRpc;
 
-            $http( request )
-                .success( function( response ) {
-                    if ( typeof response.error !== 'undefined' ) {
+		/**
+		* login
+		*		update cookie (session_id) in both cases
+		* @return promise
+		*		resolve promise if credentials ok
+		*		reject promise if credentials ko (with {title: wrong_login})
+		*		reject promise in other cases (http issues, server error)   
+		*/
+		odooRpc.login = function(db, login, password) {
+			var params = {
+				db : db,
+				login : login,
+				password : password
+			};
 
-                        var error = response.error;
-                        var errorObj = {
-                            title: '',
-                            message:'',
-                            fullTrace: error
-                        };
+			return odooRpc.sendRequest('/web/session/authenticate', params).then(function(result) {
+				if (!result.uid) {
+					delete $cookies.session_id;
+					return $q.reject({ 
+						title: 'wrong_login',
+						message:'Credentials incorrect',
+						fullTrace: result
+					});
+				}
+				odooRpc.context = result.user_context;
+				$cookies.session_id = result.session_id;
+				return result;
+			});
+		};
 
-                        if ( error.code === 300 && error.data
-                                && error.data.type == "client_exception"
-                                && error.data.debug.match("SessionExpiredException" ) ) {
-                            console.log('session exipre with ',$cookies.session_id);
-                            delete $cookies.session_id;
+		/**
+		* check if logged in or not
+		* @param force 
+		* 		if false -> check the cookies and return boolean
+		*		if true -> check with the server if still connected return promise
+		* @return boolean || promise
+		*
+		*/
+		odooRpc.isLoggedIn = function (force) {
+			if (!force)
+				return $cookies.session_id && $cookies.session_id.length > 10;
 
-                            errorObj.title ='session_expired'; 
-                        } else {
-                            var split = ("" + error.data.fault_code).split('\n')[0].split(' -- ');
-                            if (split.length > 1) {
-                                error.type = split.shift();
-                                error.data.fault_code = error.data.fault_code.substr(error.type.length + 4);
-                            }
+			return odooRpc.getSessionInfo().then(function (result) {
+				return !!(result.uid); 
+			});
+		};
 
-                            if ( error.code === 200 && error.type ) {
-                                errorObj.title = error.type;
-                                errorObj.message = error.data.fault_code.replace(/\n/g, "<br />");
-                            } else {
-                                errorObj.title = error.message;
-                                errorObj.message = error.data.debug.replace(/\n/g, "<br />");
-                            };
-                        }
-                        deferred.reject(errorObj);
-                        odooRpc.interceptors.forEach(function (i) { i(errorObj); });
+		/**
+		* logout (delete cookie)
+		* @param force
+		*		if true try to connect with falsy ids
+		* @return null || promise 
+		*/
+		odooRpc.logout = function (force) {
+			delete $cookies.session_id;
+			if (force)
+				odooRpc.login('', '', '');
+		};
 
-                    } else {
-                        var result = response.result;
-                        if ( result.type === "ir.actions.act_proxy" ) {
-                            angular.forEach(result.action_list, function( action ) {
-                                var request = {
-                                    'method' : 'POST',
-                                    'url' : odooRpc.odoo_server + action['url'],
-                                    'data' : JSON.stringify(action['params']),
-                                    'headers': {
-                                        'Content-Type' : 'application/json'
-                                        },
-                                }
-                                $http( request );
-                            });
-                        };
-                        deferred.resolve(result);
-                    }
-            }).error(function (reason) {
-                var errorObj = {title:'http', fullTrace: reason, message:'HTTP Error'};
-                odooRpc.interceptors.forEach(function (i) { i(errorObj); });
-                deferred.reject(errorObj);
-            });
-            return deferred.promise;
-        };
+		odooRpc.searchRead = function(model, domain, fields) {
+			var params = {
+				model: model,
+				domain: domain,
+				fields: fields,
+			}
+			return odooRpc.sendRequest('/web/dataset/search_read', params);
+		};
 
-        odooRpc.login = function(db, login, password) {
-            var deferred = $q.defer();
-            var params = {
-                db : db,
-                login : login,
-                password : password
-            };
-            odooRpc.sendRequest('/web/session/authenticate', params)
-                .then(
-                    function( result ) {
-                        if ( result.uid ) {
-                            $cookies.session_id = result.session_id;
-                            deferred.resolve(result);
-                            console.log(result);
-                            odooRpc.context=result.user_context;
-                        } else {
-                            delete $cookies.session_id;
-                            deferred.reject(result);
-                        };
-                    },
-                    function( result ) {
-                        deferred.reject(result);
-                    }
-                );
-            return deferred.promise;
-        };
-        odooRpc.isLoggedIn = function () {
-            return $cookies.session_id && $cookies.session_id.length > 10;
-        }
+		odooRpc.getSessionInfo = function(model, method, args, kwargs) {
+			return odooRpc.sendRequest('/web/session/get_session_info', {});
+		};
 
-        odooRpc.logout = function () {
-           delete $cookies.session_id;
-        };
+		odooRpc.getServerInfo = function(model, method, args, kwargs) {
+			return odooRpc.sendRequest('/web/webclient/version_info', {});
+		};
 
-        odooRpc.searchRead = function(model, domain, fields) {
-            var params = {
-                model: model,
-                domain: domain,
-                fields: fields,
-            }
-            return odooRpc.sendRequest('/web/dataset/search_read', params);
-        }
+		odooRpc.syncDataImport = function(model, func_key, domain, limit, object) {
+			return odooRpc.call(model, 'get_sync_data', [
+				func_key, object.timekey, domain, limit
+			], {}).then(function(result) {
+					if (object.timekey === result.timekey)
+						return; //no change since last run
+					object.timekey = result.timekey; 
+					
+					angular.extend(object.data, result.data);
+					
+					angular.forEach(object.remove_ids, function(id) {
+							delete object.data[id];
+					});
 
-        odooRpc.call = function(model, method, args, kwargs) {
-            if ( ! kwargs ) {
-                kwargs = {}
-            }
-            if ( kwargs.context ) {
-                kwargs.context.extend(OdooRpc.context)
-            } else {
-                kwargs.context = odooRpc.context
-            }
-            var params = {
-                model: model,
-                method: method,
-                args: args,
-                kwargs: kwargs,
-            };
-            return odooRpc.sendRequest('/web/dataset/call_kw', params);
-        }
+					if (result.data.length)
+						odooRpc.syncDataImport(model, func_key, domain, limit, object);
+			});
+		};
 
-        odooRpc.get_session_info = function(model, method, args, kwargs) {
-            return odooRpc.sendRequest('/web/session/get_session_info', {});
-        }
-        
-        odooRpc.syncDataImport = function(model, func_key, domain, limit, object) {
-            return odooRpc.call(model, 'get_sync_data', [
-                func_key, object.timekey, domain, limit
-            ], {}).then(
-                function(result) {
-                    if (object.timekey === result.timekey)
-                        return;
-                    object.timekey = result.timekey; 
-                    if(!$.isEmptyObject(result.data)) {
-                        angular.extend(object.data, result.data);
-                    }
-                    if(!$.isEmptyObject(object.remove_ids)) {
-                        angular.forEach(object.remove_ids, function(id){
-                            delete object.data[id]
-                        });
-                    }
-                    if (result.data.length)
-                    	odooRpc.syncDataImport(model, func_key, domain, limit, object);
-            });
-        };
+		odooRpc.syncImportObject = function(params) {
+			/* params = {
+					model: 'odoo.model',
+					func_key: 'my_function_key',
+					domain: [],
+					limit: 50,
+					interval: 5000,
+					}
 
-        odooRpc.syncImportObject = function(params) {
-            /* params = {
-                    model: 'odoo.model',
-                    func_key: 'my_function_key',
-                    domain: [],
-                    limit: 50,
-                    interval: 5000,
-                    }
+			 return a synchronized object where you can access
+			 to the data using object.data
+			*/
+			var stop = false;
+			var watchers = [];
+			var object = { 
+				data: {}, 
+				timekey: null, 
+				stopCallback: function () {
+					stop = true;
+				},
+				watch: function(fun) {
+					watchers.push(fun);
+				}
+			};
 
-             return a synchronized object where you can access
-             to the data using object.data
-             */
-            var stop = false;
-            var watchers = [];
-            var object = { 
-                data: {}, 
-                timekey: null, 
-                stopCallback: function () {
-                    stop = true;
-                },
-                watch: function(fun) {
-                    watchers.push(fun);
-                }
-            };
+			function sync() {
 
-            function sync() {
+				odooRpc.syncDataImport(
+					params.model,
+					params.func_key,
+					params.domain,
+					params.limit,
+					object).then(function () { 
+						if (!stop)
+							$timeout(sync, params.interval);
+				}).then(function(data) {
+					watchers.forEach(function (fun) {
+						fun(data);
+					});
+				});
+			}
+			sync();
 
-                odooRpc.syncDataImport(
-                    params.model,
-                    params.func_key,
-                    params.domain,
-                    params.limit,
-                    object).then(function () { 
-                        if (!stop)
-                            $timeout(sync, params.interval);
-                }).then(function(data) {
-                    watchers.forEach(function (fun) {
-                        fun(data);
-                    });
-                });
-            }
-            sync();
+			return object;
+		};
 
-            return object;
-        }
+		odooRpc.call = function(model, method, args, kwargs) {
 
-        return odooRpc;
-   };
+			kwargs = kwargs || {};
+			kwargs.context = kwargs.context || {};
+			angular.extend(kwargs.context, OdooRpc.context);
+
+			var params = {
+				model: model,
+				method: method,
+				args: args,
+				kwargs: kwargs,
+			};
+			return odooRpc.sendRequest('/web/dataset/call_kw', params);
+		};
+
+
+		/**
+		* base function
+		*/
+		odooRpc.sendRequest = function(url, params) {
+
+			/** (internal) build request for $http
+			* keep track of uniq_id_counter
+			* add session_id in the request (for Odoo v7 only) 
+			*/
+			function buildRequest(url, params) {
+				odooRpc.uniq_id_counter += 1;
+				if (odooRpc.shouldManageSessionId)
+					params.session_id = $cookies.session_id
+
+				var json_data = {
+					jsonrpc: '2.0',
+					method: 'call',
+					params: params, //payload
+				};
+				return {
+					'method' : 'POST',
+					'url' : odooRpc.odoo_server + url,
+					'data' : JSON.stringify(json_data),
+					'headers': {
+						'Content-Type' : 'application/json'
+					},
+					'id': ("r" + odooRpc.uniq_id_counter),
+				};
+			}
+
+			/** (internal) determine if session_id shoud be managed by this lib
+			* more info: 
+			*	in v7 session_id is returned by the server in the payload 
+			*		and it should be added in each request's paylaod.
+			*		it's 
+			*
+			*	in v8 session_id is set as a cookie by the server
+			*		therefor the browser send it on each request automatically
+			*
+			*	in both case, we keep session_id as a cookie to be compliant with other odoo web clients 
+			*
+			*/
+			function preflight() {
+				//preflightPromise is a kind of cache and is set only if the request succeed
+				return preflightPromise || $http(buildRequest('/webclient/version_info'), {}).then(function (response) {
+					odooRpc.shouldManageSessionId = (response.data.result.server_serie < "8"); //server_serie is string like "7.01"
+					preflightPromise = $q.when(); //runonce
+				});
+			}
+
+			return preflight().then(function () {
+				return $http(buildRequest(url, params)).then(function(result) {
+					var response = result.data;
+
+					if (response.error) { //Odoo doesn't use HTTP Response codes.
+
+						var error = response.error;
+						var errorObj = {
+							title: '',
+							message:'',
+							fullTrace: error
+						};
+
+						if ((error.code === 100 && error.message === "Odoo Session Expired") || //v8
+							(error.code === 300 && error.message === "OpenERP WebClient Error" && error.data.debug.match("SessionExpiredException")) //v7
+							) {
+							errorObj.title ='session_expired';
+							delete $cookies.session_id;
+
+						} else {
+							var split = ("" + error.data.fault_code).split('\n')[0].split(' -- ');
+							if (split.length > 1) {
+								error.type = split.shift();
+								error.data.fault_code = error.data.fault_code.substr(error.type.length + 4);
+							}
+
+							if (error.code === 200 && error.type) {
+								errorObj.title = error.type;
+								errorObj.message = error.data.fault_code.replace(/\n/g, "<br />");
+							} else {
+								errorObj.title = error.message;
+								errorObj.message = error.data.debug.replace(/\n/g, "<br />");
+							};
+						}
+						return $q.reject(errorObj);
+					}
+
+					var result = response.result;
+					if (result.type === "ir.actions.act_proxy") {
+						var subRequests = [];
+						angular.forEach(result.action_list, function(action) {
+							subRequests.push($http(buildRequest(action['url'], action['params'])));
+						});
+						return $q.all(subRequests);
+					} else
+						return result;
+				}, function (reason) {
+					var errorObj = {title:'http', fullTrace: reason, message:'HTTP Error'};
+					return $q.reject(errorObj);
+				});
+			});
+		};
+
+		return odooRpc;
+	};
 });
 
