@@ -13,9 +13,10 @@ describe("jsonRpc tests", function() {
 		$httpBackend = _$httpBackend_
 	}));
 
-        $httpBackend.verifyNoOutstandingExpectation ();
-        $httpBackend.verifyNoOutstandingRequest ();
-    });
+	afterEach(function() {
+		$httpBackend.verifyNoOutstandingExpectation();
+		$httpBackend.verifyNoOutstandingRequest();
+	});
 	function fail(a) {
 		expect(true).toBe(false);
 	}
