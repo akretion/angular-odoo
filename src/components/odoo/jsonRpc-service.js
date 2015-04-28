@@ -159,7 +159,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 
 			kwargs = kwargs || {};
 			kwargs.context = kwargs.context || {};
-			angular.extend(kwargs.context, OdooRpc.context);
+			angular.extend(kwargs.context, odooRpc.context);
 
 			var params = {
 				model: model,
