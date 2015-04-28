@@ -6,6 +6,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 		uniq_id_counter: 0,
 		context: {'lang': 'fr_FR'},
 		shouldManageSessionId: false, //try without first
+		errorInterceptors: []
 	};
 
 	var preflightPromise = null;
@@ -243,6 +244,9 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 						errorObj.message = error.data.debug.replace(/\n/g, "<br />");
 					}
 				}
+				errorInterceptors.forEach(function (i) {
+					i(errorObj);
+				});
 				return $q.reject(errorObj)
 			}
 
@@ -254,6 +258,9 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			*/
 			function handleHttpErrors(reason) {
 				var errorObj = {title:'http', fullTrace: reason, message:'HTTP Error'};
+				errorInterceptors.forEach(function (i) {
+					i(errorObj);
+				});
 				return $q.reject(errorObj);
 			}
 
