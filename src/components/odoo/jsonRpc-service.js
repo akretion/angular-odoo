@@ -71,7 +71,9 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 		odooRpc.logout = function (force) {
 			delete $cookies.session_id;
 			if (force)
-				odooRpc.login('', '', '');
+				odooRpc.getSessionInfo().then(function (r) { //get db from sessionInfo
+					odooRpc.login(r.db, '', '');
+				});
 		};
 
 		odooRpc.searchRead = function(model, domain, fields) {
