@@ -13,7 +13,6 @@ describe("jsonRpc tests", function() {
 		$httpBackend = _$httpBackend_
 	}));
 
- 	afterEach (function () {
         $httpBackend.verifyNoOutstandingExpectation ();
         $httpBackend.verifyNoOutstandingRequest ();
     });
@@ -49,7 +48,7 @@ describe("jsonRpc tests", function() {
 			$httpBackend.whenPOST('/web/session/get_session_info').respond ({
 				jsonrpc:"2.0",
 				id: null,
-				error: { 
+				error: {
 					message: "OpenERP WebClient Error",
 					code: 300,
 					data : {
@@ -244,7 +243,7 @@ describe("jsonRpc tests", function() {
 			.then(jsonRpc.isLoggedIn).then(function (r) {
 				expect(r).toBe(true); //ensure connected
 			}, fail);
-				
+
 			$httpBackend.flush();
 		});
 	});
