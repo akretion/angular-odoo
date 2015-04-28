@@ -13,10 +13,10 @@ describe("jsonRpc tests", function() {
 		$httpBackend = _$httpBackend_
 	}));
 
- 	afterEach (function () {
-        $httpBackend.verifyNoOutstandingExpectation ();
-        $httpBackend.verifyNoOutstandingRequest ();
-    });
+	afterEach(function() {
+		$httpBackend.verifyNoOutstandingExpectation();
+		$httpBackend.verifyNoOutstandingRequest();
+	});
 	function fail(a) {
 		expect(true).toBe(false);
 	}
@@ -25,14 +25,14 @@ describe("jsonRpc tests", function() {
 	}
 
 	function set_version_info7() {
-		$httpBackend.whenPOST('/webclient/version_info').respond({
+		$httpBackend.whenPOST('/web/webclient/version_info').respond({
 			jsonrpc:"2.0",
 			id: null,
 			result: {"server_serie": "7.0", "server_version_info": [7, 0, 0, "final", 0], "server_version": "7.0", "protocol_version": 1}
 		});
 	}
 	function set_version_info8() {
-		$httpBackend.whenPOST('/webclient/version_info').respond({
+		$httpBackend.whenPOST('/web/webclient/version_info').respond({
 				jsonrpc:"2.0",
 				id: null,
 				result: {"server_serie": "8.0", "server_version_info": [8, 0, 0, "final", 0], "server_version": "8.0", "protocol_version": 1}
@@ -49,7 +49,7 @@ describe("jsonRpc tests", function() {
 			$httpBackend.whenPOST('/web/session/get_session_info').respond ({
 				jsonrpc:"2.0",
 				id: null,
-				error: { 
+				error: {
 					message: "OpenERP WebClient Error",
 					code: 300,
 					data : {
@@ -119,6 +119,15 @@ describe("jsonRpc tests", function() {
 		it("should handle 404", function () {
 			set_version_info7();
 			$httpBackend.whenPOST('/web/session/authenticate').respond(404, "Not found");
+			jsonRpc.login().then(fail, success);
+			$httpBackend.flush();
+		});
+		it("should handle odoo 404", function () {
+			set_version_info8();
+			$httpBackend.whenPOST('/web/session/authenticate').respond({
+				jsonrpc: "2.0",
+				id: null,
+				error: {message: "Odoo Server Error", code: 200, data: {debug: "Traceback (most recent call last):\n  File \"/workspace/parts/odoo/openerp/http.py\", line 530, in _handle_exception\n    return super(JsonRequest, self)._handle_exception(exception)\n  File \"/workspace/parts/odoo/openerp/addons/base/ir/ir_http.py\", line 153, in _dispatch\n    rule, arguments = self._find_handler(return_rule=True)\n  File \"/workspace/parts/odoo/openerp/addons/base/ir/ir_http.py\", line 65, in _find_handler\n    return self.routing_map().bind_to_environ(request.httprequest.environ).match(return_rule=return_rule)\n  File \"/home/ubuntu/.voodoo/shared/eggs/Werkzeug-0.10.4-py2.7.egg/werkzeug/routing.py\", line 1483, in match\n    raise NotFound()\nNotFound: 404: Not Found\n", message: "", name: "werkzeug.exceptions.NotFound", arguments: []}}});
 			jsonRpc.login().then(fail, success);
 			$httpBackend.flush();
 		});
@@ -244,7 +253,7 @@ describe("jsonRpc tests", function() {
 			.then(jsonRpc.isLoggedIn).then(function (r) {
 				expect(r).toBe(true); //ensure connected
 			}, fail);
-				
+
 			$httpBackend.flush();
 		});
 	});
