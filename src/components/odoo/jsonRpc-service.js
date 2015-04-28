@@ -201,6 +201,70 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 				};
 			}
 
+			/** (internal) Odoo do some error handling and doesn't care
+			* about HTTP response code
+			* catch errors codes here and reject
+			*	@param response $http promise
+			*	@return promise 
+			*		if no error : response.data ($http.config & header stripped)
+			*		if error : reject with a custom errorObj
+			*/
+			function handleOdooErrors(response) {
+				if (!response.data.error)
+					return response.data;
+
+				var error = response.data.error;
+				var errorObj = {
+					title: '',
+					message:'',
+					fullTrace: error
+				};
+
+				if (error.code === 200 && error.message === "Odoo Server Error" && error.data.name === "werkzeug.exceptions.NotFound") {
+					errorObj.title = 'page_not_found';
+					errorObj.message = 'HTTP Error';
+				} else if ( (error.code === 100 && error.message === "Odoo Session Expired") || //v8
+							(error.code === 300 && error.message === "OpenERP WebClient Error" && error.data.debug.match("SessionExpiredException")) //v7
+						) {
+							errorObj.title ='session_expired';
+							delete $cookies.session_id;
+				} else {
+					var split = ("" + error.data.fault_code).split('\n')[0].split(' -- ');
+					if (split.length > 1) {
+						error.type = split.shift();
+						error.data.fault_code = error.data.fault_code.substr(error.type.length + 4);
+					}
+
+					if (error.code === 200 && error.type) {
+						errorObj.title = error.type;
+						errorObj.message = error.data.fault_code.replace(/\n/g, "<br />");
+					} else {
+						errorObj.title = error.message;
+						errorObj.message = error.data.debug.replace(/\n/g, "<br />");
+					}
+				}
+				return $q.reject(errorObj)
+			}
+
+			/**
+			*	(internal)
+			*	catch HTTP response code (not handled by Odoo ie Error 500, 404)
+			*	@params $http rejected promise
+ 			*	@return promise
+			*/
+			function handleHttpErrors(reason) {
+				var errorObj = {title:'http', fullTrace: reason, message:'HTTP Error'};
+				return $q.reject(errorObj);
+			}
+
+			/**
+			*	(internal) wrapper around $http for handling errors and build request
+			*/
+			function http(url, params) {
+				var req = buildRequest(url, params);
+				return $http(req).then(handleOdooErrors, handleHttpErrors);
+			}
+
 			/** (internal) determine if session_id shoud be managed by this lib
 			* more info: 
 			*	in v7 session_id is returned by the server in the payload 
@@ -215,61 +279,22 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			*/
 			function preflight() {
 				//preflightPromise is a kind of cache and is set only if the request succeed
-				return preflightPromise || $http(buildRequest('/webclient/version_info'), {}).then(function (response) {
-					odooRpc.shouldManageSessionId = (response.data.result.server_serie < "8"); //server_serie is string like "7.01"
+				return preflightPromise || http('/web/webclient/version_info', {}).then(function (reason) {
+					odooRpc.shouldManageSessionId = (reason.result.server_serie < "8"); //server_serie is string like "7.01"
 					preflightPromise = $q.when(); //runonce
 				});
 			}
 
 			return preflight().then(function () {
-				return $http(buildRequest(url, params)).then(function(result) {
-					var response = result.data;
-
-					if (response.error) { //Odoo doesn't use HTTP Response codes.
-
-						var error = response.error;
-						var errorObj = {
-							title: '',
-							message:'',
-							fullTrace: error
-						};
-
-						if ((error.code === 100 && error.message === "Odoo Session Expired") || //v8
-							(error.code === 300 && error.message === "OpenERP WebClient Error" && error.data.debug.match("SessionExpiredException")) //v7
-							) {
-							errorObj.title ='session_expired';
-							delete $cookies.session_id;
-
-						} else {
-							var split = ("" + error.data.fault_code).split('\n')[0].split(' -- ');
-							if (split.length > 1) {
-								error.type = split.shift();
-								error.data.fault_code = error.data.fault_code.substr(error.type.length + 4);
-							}
-
-							if (error.code === 200 && error.type) {
-								errorObj.title = error.type;
-								errorObj.message = error.data.fault_code.replace(/\n/g, "<br />");
-							} else {
-								errorObj.title = error.message;
-								errorObj.message = error.data.debug.replace(/\n/g, "<br />");
-							};
-						}
-						return $q.reject(errorObj);
-					}
-
-					var result = response.result;
-					if (result.type === "ir.actions.act_proxy") {
-						var subRequests = [];
-						angular.forEach(result.action_list, function(action) {
-							subRequests.push($http(buildRequest(action['url'], action['params'])));
+				return http(url, params).then(function(response) {
+					var subRequests = [];
+					if (response.type === "ir.actions.act_proxy") {
+						angular.forEach(response.action_list, function(action) {
+							subRequests.push(http(action['url'], action['params']));
 						});
 						return $q.all(subRequests);
 					} else
-						return result;
-				}, function (reason) {
-					var errorObj = {title:'http', fullTrace: reason, message:'HTTP Error'};
-					return $q.reject(errorObj);
+						return response.result;
 				});
 			});
 		};
