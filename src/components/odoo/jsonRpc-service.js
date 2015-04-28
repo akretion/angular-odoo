@@ -244,7 +244,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 						errorObj.message = error.data.debug.replace(/\n/g, "<br />");
 					}
 				}
-				errorInterceptors.forEach(function (i) {
+				odooRpc.errorInterceptors.forEach(function (i) {
 					i(errorObj);
 				});
 				return $q.reject(errorObj)
@@ -258,7 +258,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			*/
 			function handleHttpErrors(reason) {
 				var errorObj = {title:'http', fullTrace: reason, message:'HTTP Error'};
-				errorInterceptors.forEach(function (i) {
+				odooRpc.errorInterceptors.forEach(function (i) {
 					i(errorObj);
 				});
 				return $q.reject(errorObj);
