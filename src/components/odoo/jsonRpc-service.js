@@ -149,7 +149,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 							$timeout(sync, params.interval);
 				}).then(function(data) {
 					watchers.forEach(function (fun) {
-						fun(data);
+						fun(object);
 					});
 				});
 			}
