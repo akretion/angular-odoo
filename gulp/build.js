@@ -13,6 +13,7 @@ gulp.task('build-lib', [], function () {
      paths.src + '/app/app.js',
      paths.src + '/components/**/*.js'
    ])
+     .pipe($.ignore.exclude('*.spec.js'))
      .pipe($.ngAnnotate())
      .pipe($.concat('odoo.js'))
      .pipe(gulp.dest(paths.dist + '/'))
@@ -24,6 +25,7 @@ gulp.task('build-lib-min', [], function () {
      paths.src + '/app/app.js',
      paths.src + '/components/**/*.js'
    ])
+     .pipe($.ignore.exclude('*.spec.js'))
      .pipe($.ngAnnotate())
      .pipe($.uglify({preserveComments:$.uglifySaveLicense}))
      .pipe($.concat('odoo.min.js'))
