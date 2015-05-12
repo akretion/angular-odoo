@@ -73,7 +73,7 @@ describe("jsonRpc tests", function() {
 					code: 100
 				},
 				data: {
-					deubg: "Traceback (most recent call last):  File \"/workspace/parts/odoo/openerp/http.py\", line 530, in _handle_exception    return super(JsonRequest, self)._handle_exception(exception)  File \"/workspace/parts/odoo/openerp/addons/base/ir/ir_http.py\", line 160, in _dispatch    auth_method = self._authenticate(func.routing[\"auth\"])  File \"/workspace/parts/odoo/openerp/addons/base/ir/ir_http.py\", line 93, in _authenticate    getattr(self, \"_auth_method_%s\" % auth_method)()  File \"/workspace/parts/odoo/openerp/addons/base/ir/ir_http.py\", line 70, in _auth_method_user    raise http.SessionExpiredException(\"Session expired\")SessionExpiredException: Session expired",
+					debug: "Traceback (most recent call last):  File \"/workspace/parts/odoo/openerp/http.py\", line 530, in _handle_exception    return super(JsonRequest, self)._handle_exception(exception)  File \"/workspace/parts/odoo/openerp/addons/base/ir/ir_http.py\", line 160, in _dispatch    auth_method = self._authenticate(func.routing[\"auth\"])  File \"/workspace/parts/odoo/openerp/addons/base/ir/ir_http.py\", line 93, in _authenticate    getattr(self, \"_auth_method_%s\" % auth_method)()  File \"/workspace/parts/odoo/openerp/addons/base/ir/ir_http.py\", line 70, in _auth_method_user    raise http.SessionExpiredException(\"Session expired\")SessionExpiredException: Session expired",
 					message: "Session expired",
 					name:"openerp.http.SessionExpiredException",
 					arguments: ["Session expired"]
