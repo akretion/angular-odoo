@@ -300,8 +300,8 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			return preflight().then(function () {
 				return http(url, params).then(function(response) {
 					var subRequests = [];
-					if (response.type === "ir.actions.act_proxy") {
-						angular.forEach(response.action_list, function(action) {
+					if (response.result.type === "ir.actions.act_proxy") {
+						angular.forEach(response.result.action_list, function(action) {
 							subRequests.push(http(action['url'], action['params']));
 						});
 						return $q.all(subRequests);
