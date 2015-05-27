@@ -302,7 +302,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 					var subRequests = [];
 					if (response.result.type === "ir.actions.act_proxy") {
 						angular.forEach(response.result.action_list, function(action) {
-							subRequests.push(http(action['url'], action['params']));
+							subRequests.push($http.post(action['url'], action['params']));
 						});
 						return $q.all(subRequests);
 					} else
