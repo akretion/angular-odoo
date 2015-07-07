@@ -102,12 +102,12 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 					object.timekey = result.timekey; 
 					
 					angular.extend(object.data, result.data);
-					
+
 					angular.forEach(object.remove_ids, function(id) {
 							delete object.data[id];
 					});
 
-					if (result.data.length)
+					if (Object.keys(result.data).length)
 						odooRpc.syncDataImport(model, func_key, domain, limit, object);
 			});
 		};
