@@ -98,8 +98,8 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			return odooRpc.call(model, 'get_sync_data', [
 				func_key, object.timekey, domain, limit
 			], {}).then(function(result) {
-					if (object.timekey === result.timekey)
-						return; //no change since last run
+					//if (object.timekey === result.timekey) TODO: add mutlidomain before uncomment
+					// return; //no change since last run
 					object.timekey = result.timekey; 
 					
 					angular.forEach(result.remove_ids, function(id) {
