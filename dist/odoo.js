@@ -75,6 +75,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			delete $cookies.session_id;
 			if (force)
 				odooRpc.getSessionInfo().then(function (r) { //get db from sessionInfo
+				if (r.db)
 					odooRpc.login(r.db, '', '');
 				});
 		};
@@ -104,14 +105,14 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 						return; //no change since last run
 					object.timekey = result.timekey; 
 					
-					angular.extend(object.data, result.data);
-					
 					angular.forEach(object.remove_ids, function(id) {
-							delete object.data[id];
+						delete object.data[id];
 					});
 
-					if (result.data.length)
+					if (Object.keys(result.data).length) {
+						angular.extend(object.data, result.data);
 						odooRpc.syncDataImport(model, func_key, domain, limit, object);
+					}
 			});
 		};
 
@@ -300,9 +301,9 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			return preflight().then(function () {
 				return http(url, params).then(function(response) {
 					var subRequests = [];
-					if (response.type === "ir.actions.act_proxy") {
-						angular.forEach(response.action_list, function(action) {
-							subRequests.push(http(action['url'], action['params']));
+					if (response.result.type === "ir.actions.act_proxy") {
+						angular.forEach(response.result.action_list, function(action) {
+							subRequests.push($http.post(action['url'], action['params']));
 						});
 						return $q.all(subRequests);
 					} else
