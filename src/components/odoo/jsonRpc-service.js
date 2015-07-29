@@ -102,7 +102,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 						return; //no change since last run
 					object.timekey = result.timekey; 
 					
-					angular.forEach(object.remove_ids, function(id) {
+					angular.forEach(result.remove_ids, function(id) {
 						delete object.data[id];
 					});
 
