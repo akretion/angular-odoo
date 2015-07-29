@@ -105,7 +105,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 					angular.extend(object.data, result.data);
 
 					angular.forEach(object.remove_ids, function(id) {
-							delete object.data[id];
+						delete object.data[id];
 					});
 
 					if (Object.keys(result.data).length)
