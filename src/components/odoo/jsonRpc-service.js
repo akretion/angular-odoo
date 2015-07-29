@@ -72,6 +72,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			delete $cookies.session_id;
 			if (force)
 				odooRpc.getSessionInfo().then(function (r) { //get db from sessionInfo
+				if (r.db)
 					odooRpc.login(r.db, '', '');
 				});
 		};
@@ -101,14 +102,14 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 						return; //no change since last run
 					object.timekey = result.timekey; 
 					
-					angular.extend(object.data, result.data);
-
-					angular.forEach(object.remove_ids, function(id) {
-							delete object.data[id];
+					angular.forEach(result.remove_ids, function(id) {
+						delete object.data[id];
 					});
 
-					if (Object.keys(result.data).length)
+					if (Object.keys(result.data).length) {
+						angular.extend(object.data, result.data);
 						odooRpc.syncDataImport(model, func_key, domain, limit, object);
+					}
 			});
 		};
 
