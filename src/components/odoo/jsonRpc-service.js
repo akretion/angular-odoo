@@ -11,7 +11,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 
 	var preflightPromise = null;
 
-	this.$get = function($http, $cookies, $q, $timeout) {
+	this.$get = function($http, $q, $timeout) {
 
 		var odooRpc = this.odooRpc;
 
@@ -32,7 +32,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 
 			return odooRpc.sendRequest('/web/session/authenticate', params).then(function(result) {
 				if (!result.uid) {
-					delete $cookies.session_id;
+					cookies.delete_sessionId();
 					return $q.reject({ 
 						title: 'wrong_login',
 						message:'Credentials incorrect',
@@ -40,7 +40,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 					});
 				}
 				odooRpc.context = result.user_context;
-				$cookies.session_id = result.session_id;
+				cookies.set_sessionId(result.session_id);
 				return result;
 			});
 		};
@@ -55,7 +55,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 		*/
 		odooRpc.isLoggedIn = function (force) {
 			if (!force)
-				return $cookies.session_id && $cookies.session_id.length > 10;
+				return cookies.get_sessionId().length > 0;
 
 			return odooRpc.getSessionInfo().then(function (result) {
 				return !!(result.uid); 
@@ -69,7 +69,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 		* @return null || promise 
 		*/
 		odooRpc.logout = function (force) {
-			delete $cookies.session_id;
+			cookies.delete_sessionId();
 			if (force)
 				odooRpc.getSessionInfo().then(function (r) { //get db from sessionInfo
 				if (r.db)
@@ -187,7 +187,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			function buildRequest(url, params) {
 				odooRpc.uniq_id_counter += 1;
 				if (odooRpc.shouldManageSessionId)
-					params.session_id = $cookies.session_id
+					params.session_id = cookies.get_sessionId();
 
 				var json_data = {
 					jsonrpc: '2.0',
@@ -231,7 +231,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 							(error.code === 300 && error.message === "OpenERP WebClient Error" && error.data.debug.match("SessionExpiredException")) //v7
 						) {
 							errorObj.title ='session_expired';
-							delete $cookies.session_id;
+							cookies.delete_sessionId();
 				} else {
 					var split = ("" + error.data.fault_code).split('\n')[0].split(' -- ');
 					if (split.length > 1) {
@@ -311,5 +311,20 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 
 		return odooRpc;
 	};
+
+  var cookies = (function() {
+    return {
+      delete_sessionId: function() {
+        document.cookie  = 'session_id=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      },
+      get_sessionId: function () {
+        //source : MDN
+        return document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + 'session_id' + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1");
+      },
+      set_sessionId: function (val) {
+        document.cookie = 'session_id=' + val;
+      }
+    };
+    }());
 });
 

@@ -1,2 +1,2 @@
 'use strict';
-angular.module('odoo', ['ngCookies']);
+angular.module('odoo', []);
