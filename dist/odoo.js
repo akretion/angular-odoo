@@ -111,7 +111,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 
 					if (Object.keys(result.data).length) {
 						angular.extend(object.data, result.data);
-						odooRpc.syncDataImport(model, func_key, domain, limit, object);
+						return odooRpc.syncDataImport(model, func_key, domain, limit, object);
 					}
 			});
 		};
@@ -148,9 +148,10 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 					params.func_key,
 					params.domain,
 					params.limit,
-					object).then(function () { 
-						if (!stop)
-							$timeout(sync, params.interval);
+					object)
+				.then(function () { 
+					if (!stop)
+						$timeout(sync, params.interval);
 				}).then(function(data) {
 					watchers.forEach(function (fun) {
 						fun(object);
