@@ -236,6 +236,9 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 						) {
 							errorObj.title ='session_expired';
 							cookies.delete_sessionId();
+				} else if ( (error.message === "Odoo Server Error" && /FATAL:  database "(.+)" does not exist/.test(error.data.message))) {
+					errorObj.title = "database_not_found";
+					errorObj.message = error.data.message;
 				} else {
 					var split = ("" + error.data.fault_code).split('\n')[0].split(' -- ');
 					if (split.length > 1) {
