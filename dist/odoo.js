@@ -319,19 +319,21 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 		return odooRpc;
 	}];
 
-  var cookies = (function() {
-    return {
-      delete_sessionId: function() {
-        document.cookie  = 'session_id=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      },
-      get_sessionId: function () {
-        //source : MDN
-        return document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + 'session_id' + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1");
-      },
-      set_sessionId: function (val) {
-        document.cookie = 'session_id=' + val;
-      }
-    };
-    }());
+	var cookies = (function() {
+		return {
+			delete_sessionId: function() {
+				document.cookie  = 'session_id=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+			},
+			get_sessionId: function () {
+				return document.cookie.split('; ')
+				.filter(function (x) { return x.indexOf('session_id') === 0; })
+				.map(function (x) { return x.split('=')[1]; })
+				.pop() || "";
+			},
+			set_sessionId: function (val) {
+				document.cookie = 'session_id=' + val;
+			}
+		};
+	}());
 });
 
