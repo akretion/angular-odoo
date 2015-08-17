@@ -318,18 +318,21 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 	};
 
 	var cookies = (function() {
+		var session_id; //cookies doesn't work with Android Default Browser / Ionic
 		return {
 			delete_sessionId: function() {
+				session_id = null;
 				document.cookie  = 'session_id=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
 			},
 			get_sessionId: function () {
 				return document.cookie.split('; ')
 				.filter(function (x) { return x.indexOf('session_id') === 0; })
 				.map(function (x) { return x.split('=')[1]; })
-				.pop() || "";
+				.pop() || session_id || "";
 			},
 			set_sessionId: function (val) {
 				document.cookie = 'session_id=' + val;
+				session_id = val;
 			}
 		};
 	}());
