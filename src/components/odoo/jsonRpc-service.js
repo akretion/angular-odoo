@@ -58,6 +58,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 				return cookies.get_sessionId().length > 0;
 
 			return odooRpc.getSessionInfo().then(function (result) {
+				cookies.set_sessionId(result.session_id);
 				return !!(result.uid); 
 			});
 		};
