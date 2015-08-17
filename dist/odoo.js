@@ -98,9 +98,9 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			return odooRpc.sendRequest('/web/webclient/version_info', {});
 		};
 
-		odooRpc.syncDataImport = function(model, func_key, domain, limit, object) {
+		odooRpc.syncDataImport = function(model, func_key, base_domain, filter_domain, limit, object) {
 			return odooRpc.call(model, 'get_sync_data', [
-				func_key, object.timekey, domain, limit
+				func_key, object.timekey, base_domain, filter_domain, limit
 			], {}).then(function(result) {
 					//if (object.timekey === result.timekey) TODO: add mutlidomain before uncomment
 					// return; //no change since last run
@@ -112,7 +112,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 
 					if (Object.keys(result.data).length) {
 						angular.extend(object.data, result.data);
-						return odooRpc.syncDataImport(model, func_key, domain, limit, object);
+						return odooRpc.syncDataImport(model, func_key, base_domain, filter_domain, limit, object);
 					}
 			});
 		};
@@ -147,7 +147,8 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 				odooRpc.syncDataImport(
 					params.model,
 					params.func_key,
-					params.domain,
+					params.base_domain,
+					params.filter_domain,
 					params.limit,
 					object)
 				.then(function () { 
