@@ -35,7 +35,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 					cookies.delete_sessionId();
 					return $q.reject({ 
 						title: 'wrong_login',
-						message:'Credentials incorrect',
+						message:"Username and password don't match",
 						fullTrace: result
 					});
 				}
