@@ -98,6 +98,9 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			return odooRpc.sendRequest('/web/webclient/version_info', {});
 		};
 
+		odooRpc.getDbList = function() {
+			return odooRpc.sendRequest('/web/database/get_list', {});
+		};
 		odooRpc.syncDataImport = function(model, func_key, base_domain, filter_domain, limit, object) {
 			return odooRpc.call(model, 'get_sync_data', [
 				func_key, object.timekey, base_domain, filter_domain, limit
@@ -240,6 +243,9 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 							cookies.delete_sessionId();
 				} else if ( (error.message === "Odoo Server Error" && /FATAL:  database "(.+)" does not exist/.test(error.data.message))) {
 					errorObj.title = "database_not_found";
+					errorObj.message = error.data.message;
+				} else if ( (error.data.name === "openerp.exceptions.AccessError")) {
+					errorObj.title = 'AccessError';
 					errorObj.message = error.data.message;
 				} else {
 					var split = ("" + error.data.fault_code).split('\n')[0].split(' -- ');
