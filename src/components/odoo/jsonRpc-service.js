@@ -95,6 +95,9 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			return odooRpc.sendRequest('/web/webclient/version_info', {});
 		};
 
+		odooRpc.getDbList = function() {
+			return odooRpc.sendRequest('/web/database/get_list', {});
+		};
 		odooRpc.syncDataImport = function(model, func_key, base_domain, filter_domain, limit, object) {
 			return odooRpc.call(model, 'get_sync_data', [
 				func_key, object.timekey, base_domain, filter_domain, limit
