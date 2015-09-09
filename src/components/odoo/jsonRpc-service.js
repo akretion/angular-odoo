@@ -111,7 +111,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 					});
 
 					if (Object.keys(result.data).length) {
-						angular.extend(object.data, result.data);
+						angular.merge(object.data, result.data); ///merge deeply old with new
 						return odooRpc.syncDataImport(model, func_key, base_domain, filter_domain, limit, object);
 					}
 			});
