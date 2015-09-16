@@ -44,7 +44,13 @@ gulp.task('bump', function() {
 gulp.task('tag', function() {
   var pkg = require('../package.json');
   var message = 'Release ' + pkg.version;
-  return git.tag(pkg.version, message);
+  return gulp.src('./')
+    .pipe(git.add())
+    .pipe(git.commit(message))
+    .on('end', function (e) {
+      console.log('on end', e);
+      git.tag(pkg.version, message)
+    });
 });
 
 gulp.task('clean', function (done) {
