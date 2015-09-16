@@ -1,5 +1,5 @@
 'use strict';
-angular.module('odoo', ['ngCookies']);
+angular.module('odoo', []);
 
 'use strict';
 angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
@@ -14,7 +14,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 
 	var preflightPromise = null;
 
-	this.$get = ["$http", "$cookies", "$q", "$timeout", function($http, $cookies, $q, $timeout) {
+	this.$get = ["$http", "$q", "$timeout", function($http, $q, $timeout) {
 
 		var odooRpc = this.odooRpc;
 
@@ -35,15 +35,15 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 
 			return odooRpc.sendRequest('/web/session/authenticate', params).then(function(result) {
 				if (!result.uid) {
-					delete $cookies.session_id;
+					cookies.delete_sessionId();
 					return $q.reject({ 
 						title: 'wrong_login',
-						message:'Credentials incorrect',
+						message:"Username and password don't match",
 						fullTrace: result
 					});
 				}
 				odooRpc.context = result.user_context;
-				$cookies.session_id = result.session_id;
+				cookies.set_sessionId(result.session_id);
 				return result;
 			});
 		};
@@ -58,9 +58,10 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 		*/
 		odooRpc.isLoggedIn = function (force) {
 			if (!force)
-				return $cookies.session_id && $cookies.session_id.length > 10;
+				return cookies.get_sessionId().length > 0;
 
 			return odooRpc.getSessionInfo().then(function (result) {
+				cookies.set_sessionId(result.session_id);
 				return !!(result.uid); 
 			});
 		};
@@ -72,7 +73,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 		* @return null || promise 
 		*/
 		odooRpc.logout = function (force) {
-			delete $cookies.session_id;
+			cookies.delete_sessionId();
 			if (force)
 				odooRpc.getSessionInfo().then(function (r) { //get db from sessionInfo
 				if (r.db)
@@ -97,12 +98,15 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			return odooRpc.sendRequest('/web/webclient/version_info', {});
 		};
 
-		odooRpc.syncDataImport = function(model, func_key, domain, limit, object) {
+		odooRpc.getDbList = function() {
+			return odooRpc.sendRequest('/web/database/get_list', {});
+		};
+		odooRpc.syncDataImport = function(model, func_key, base_domain, filter_domain, limit, object) {
 			return odooRpc.call(model, 'get_sync_data', [
-				func_key, object.timekey, domain, limit
+				func_key, object.timekey, base_domain, filter_domain, limit
 			], {}).then(function(result) {
-					if (object.timekey === result.timekey)
-						return; //no change since last run
+					//if (object.timekey === result.timekey) TODO: add mutlidomain before uncomment
+					// return; //no change since last run
 					object.timekey = result.timekey; 
 					
 					angular.forEach(result.remove_ids, function(id) {
@@ -110,8 +114,8 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 					});
 
 					if (Object.keys(result.data).length) {
-						angular.extend(object.data, result.data);
-						odooRpc.syncDataImport(model, func_key, domain, limit, object);
+						angular.merge(object.data, result.data); ///merge deeply old with new
+						return odooRpc.syncDataImport(model, func_key, base_domain, filter_domain, limit, object);
 					}
 			});
 		};
@@ -146,11 +150,13 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 				odooRpc.syncDataImport(
 					params.model,
 					params.func_key,
-					params.domain,
+					params.base_domain,
+					params.filter_domain,
 					params.limit,
-					object).then(function () { 
-						if (!stop)
-							$timeout(sync, params.interval);
+					object)
+				.then(function () { 
+					if (!stop)
+						$timeout(sync, params.interval);
 				}).then(function(data) {
 					watchers.forEach(function (fun) {
 						fun(object);
@@ -190,7 +196,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			function buildRequest(url, params) {
 				odooRpc.uniq_id_counter += 1;
 				if (odooRpc.shouldManageSessionId)
-					params.session_id = $cookies.session_id
+					params.session_id = cookies.get_sessionId();
 
 				var json_data = {
 					jsonrpc: '2.0',
@@ -234,7 +240,13 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 							(error.code === 300 && error.message === "OpenERP WebClient Error" && error.data.debug.match("SessionExpiredException")) //v7
 						) {
 							errorObj.title ='session_expired';
-							delete $cookies.session_id;
+							cookies.delete_sessionId();
+				} else if ( (error.message === "Odoo Server Error" && /FATAL:  database "(.+)" does not exist/.test(error.data.message))) {
+					errorObj.title = "database_not_found";
+					errorObj.message = error.data.message;
+				} else if ( (error.data.name === "openerp.exceptions.AccessError")) {
+					errorObj.title = 'AccessError';
+					errorObj.message = error.data.message;
 				} else {
 					var split = ("" + error.data.fault_code).split('\n')[0].split(' -- ');
 					if (split.length > 1) {
@@ -314,5 +326,25 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 
 		return odooRpc;
 	}];
+
+	var cookies = (function() {
+		var session_id; //cookies doesn't work with Android Default Browser / Ionic
+		return {
+			delete_sessionId: function() {
+				session_id = null;
+				document.cookie  = 'session_id=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+			},
+			get_sessionId: function () {
+				return document.cookie.split('; ')
+				.filter(function (x) { return x.indexOf('session_id') === 0; })
+				.map(function (x) { return x.split('=')[1]; })
+				.pop() || session_id || "";
+			},
+			set_sessionId: function (val) {
+				document.cookie = 'session_id=' + val;
+				session_id = val;
+			}
+		};
+	}());
 });
 

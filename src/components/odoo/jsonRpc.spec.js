@@ -139,6 +139,27 @@ describe("jsonRpc tests", function() {
 		});
 	});
 
+
+	describe("wrong db on login", function () {
+		function success(reason) {
+			console.log('message', reason);
+			expect(reason.title).toEqual("database_not_found");
+		}/*
+		it("should work with v7", function () {
+			to be written
+		});*/
+		it("should work with v8", function () {
+			set_version_info8();
+			$httpBackend.whenPOST('/web/session/authenticate').respond({
+				jsonrpc: "2.0",
+				id: null,
+				error: {message: "Odoo Server Error", code: 200, data: {debug: "\"Traceback (most recent call last):  File \"/workspace/parts/odoo/openerp/http.py\", line 537, in _handle_exception    return super(JsonRequest, self)._handle_exception(exception)  File \"/workspace/parts/odoo/openerp/http.py\", line 574, in dispatch    result = self._call_function(**self.params)  File \"/workspace/parts/odoo/openerp/http.py\", line 310, in _call_function    return checked_call(self.db, *args, **kwargs)  File \"/workspace/parts/odoo/openerp/service/model.py\", line 113, in wrapper    return f(dbname, *args, **kwargs)  File \"/workspace/parts/odoo/openerp/http.py\", line 307, in checked_call    return self.endpoint(*a, **kw)  File \"/workspace/parts/odoo/openerp/http.py\", line 803, in __call__    return self.method(*args, **kw)  File \"/workspace/parts/odoo/openerp/http.py\", line 403, in response_wrap    response = f(*args, **kw)  File \"/workspace/parts/odoo/addons/web/controllers/main.py\", line 796, in authenticate    request.session.authenticate(db, login, password)  File \"/workspace/parts/odoo/openerp/http.py\", line 956, in authenticate    uid = dispatch_rpc('common', 'authenticate', [db, login, password, env])  File \"/workspace/parts/odoo/openerp/http.py\", line 115, in dispatch_rpc    result = dispatch(method, params)  File \"/workspace/parts/odoo/openerp/service/common.py\", line 26, in dispatch    return fn(*params)  File \"/workspace/parts/odoo/openerp/service/common.py\", line 37, in exp_authenticate    res_users = openerp.registry(db)['res.users']  File \"/workspace/parts/odoo/openerp/__init__.py\", line 68, in registry    return modules.registry.RegistryManager.get(database_name)  File \"/workspace/parts/odoo/openerp/modules/registry.py\", line 339, in get    update_module)  File \"/workspace/parts/odoo/openerp/modules/registry.py\", line 356, in new    registry = Registry(db_name)  File \"/workspace/parts/odoo/openerp/modules/registry.py\", line 81, in __init__    cr = self.cursor()  File \"/workspace/parts/odoo/openerp/modules/registry.py\", line 272, in cursor    return self._db.cursor()  File \"/workspace/parts/odoo/openerp/sql_db.py\", line 575, in cursor    return Cursor(self.__pool, self.dbname, self.dsn, serialized=serialized)  File \"/workspace/parts/odoo/openerp/sql_db.py\", line 181, in __init__    self._cnx = pool.borrow(dsn)  File \"/workspace/parts/odoo/openerp/sql_db.py\", line 464, in _locked    return fun(self, *args, **kwargs)  File \"/workspace/parts/odoo/openerp/sql_db.py\", line 526, in borrow    result = psycopg2.connect(dsn=dsn, connection_factory=PsycoConnection)  File \"shared/eggs/psycopg2-2.6.1-py2.7-linux-x86_64.egg/psycopg2/__init__.py\", line 164, in connect    conn = _connect(dsn, connection_factory=connection_factory, async=async)OperationalError: FATAL:  database \"db\" does not exist", message: "FATAL:  database \"db\" does not exist", name: "psycopg2.OperationalError", arguments: ["FATAL:  database \"db\" does not exist"]}}});
+			jsonRpc.login().then(fail, success);
+			$httpBackend.flush();
+		});
+	});
+
+
 	describe("login succeed", function () {
 		function success(result) {
 			expect(result.uid).toEqual(1);
