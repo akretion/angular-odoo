@@ -37,6 +37,7 @@ gulp.task('build-lib-min', [], function () {
 gulp.task('bump', function() {
   gulp.src(['./bower.json', './package.json'])
     .pipe(bump())
+    .pipe(git.add())
     .pipe(gulp.dest('./'));
 });
 
