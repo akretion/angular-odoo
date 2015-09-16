@@ -1,6 +1,6 @@
 {
   "name": "odoo",
-  "version": "0.0.1",
+  "version": "0.1.2",
   "dependencies": {
     "angular": "~1.4.3"
   },

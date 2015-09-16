@@ -1,6 +1,6 @@
 {
   "name": "odoo",
-  "version": "0.0.1",
+  "version": "0.1.2",
   "dependencies": {
     "gulp-bump": "^0.3.1",
     "gulp-git": "^1.2.0"
