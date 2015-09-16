@@ -1,6 +1,7 @@
 'use strict';
 
 var gulp = require('gulp');
+var bump = require('gulp-bump');
 
 var paths = gulp.paths;
 
@@ -31,6 +32,12 @@ gulp.task('build-lib-min', [], function () {
      .pipe($.concat('odoo.min.js'))
      .pipe(gulp.dest(paths.dist + '/'))
      .pipe($.size({ title: paths.dist + '/', showFiles: true }));
+});
+
+gulp.task('bump', function() {
+  gulp.src(['./bower.json', './package.json'])
+    .pipe(bump())
+    .pipe(gulp.dest('./'));
 });
 
 gulp.task('clean', function (done) {
