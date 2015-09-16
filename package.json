@@ -1,7 +1,9 @@
 {
   "name": "odoo",
-  "version": "0.0.0",
-  "dependencies": {},
+  "version": "0.0.1",
+  "dependencies": {
+    "gulp-bump": "^0.3.1"
+  },
   "devDependencies": {
     "gulp": "~3.8.10",
     "gulp-concat": "~2.5.2",
