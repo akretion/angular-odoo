@@ -2,7 +2,7 @@
 
 var gulp = require('gulp');
 var bump = require('gulp-bump');
-
+var git  = require('gulp-git');
 var paths = gulp.paths;
 
 var $ = require('gulp-load-plugins')({
@@ -38,6 +38,12 @@ gulp.task('bump', function() {
   gulp.src(['./bower.json', './package.json'])
     .pipe(bump())
     .pipe(gulp.dest('./'));
+});
+
+gulp.task('tag', function() {
+  var pkg = require('../package.json');
+  var message = 'Release ' + pkg.version;
+  return git.tag(pkg.version, message);
 });
 
 gulp.task('clean', function (done) {
