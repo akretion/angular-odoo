@@ -75,17 +75,18 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 		odooRpc.logout = function (force) {
 			cookies.delete_sessionId();
 			if (force)
-				odooRpc.getSessionInfo().then(function (r) { //get db from sessionInfo
-				if (r.db)
-					odooRpc.login(r.db, '', '');
+				return odooRpc.getSessionInfo().then(function (r) { //get db from sessionInfo
+					if (r.db)
+						return odooRpc.login(r.db, '', '');
 				});
+			return $q.when();
 		};
 
 		odooRpc.searchRead = function(model, domain, fields) {
 			var params = {
 				model: model,
 				domain: domain,
-				fields: fields,
+				fields: fields
 			}
 			return odooRpc.sendRequest('/web/dataset/search_read', params);
 		};
