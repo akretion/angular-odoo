@@ -82,7 +82,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			var params = {
 				model: model,
 				domain: domain,
-				fields: fields,
+				fields: fields
 			}
 			return odooRpc.sendRequest('/web/dataset/search_read', params);
 		};
