@@ -140,7 +140,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 
 				params = {
 					...
-					onErrorRetry: function(err) {
+					onErrorRetry: function(sync, err) {
 						if(shouldRetry(err)) {
 							sync.nextSync();
 						}
@@ -178,7 +178,7 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 
 			var errorCallback = null;
 			if(angular.isFunction(params.onErrorRetry)) {
-				errorCallback = params.onErrorRetry;
+				errorCallback = function(err) { params.onErrorRetry(object, err); };
 			} else if(params.onErrorRetry) {
 				errorCallback = function(err) { nextSync(); };
 			}
