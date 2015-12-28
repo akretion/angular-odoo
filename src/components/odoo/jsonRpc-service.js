@@ -127,6 +127,26 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 					interval: 5000,
 					}
 
+			 When an error happens, the sync cycle is interrupted.
+
+			 An optional parameter 'onErrorRetry' can be specified. If its value is
+			 true, then the sync cycle will continue on the next interval even when
+			 errors occur. For a more fine-grained control over the retries,
+			 'onErrorRetry' could also be a function, taking the error as argument.
+			 It should call 'nextSync()' on the synchronized object's API to delay
+			 the next sync iteration.
+
+			 Example:
+
+				params = {
+					...
+					onErrorRetry: function(sync, err) {
+						if(shouldRetry(err)) {
+							sync.nextSync();
+						}
+					}
+					}
+
 			 return a synchronized object where you can access
 			 to the data using object.data
 			*/
@@ -140,8 +160,28 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 				},
 				watch: function(fun) {
 					watchers.push(fun);
-				}
+				},
+				nextSync: nextSync
 			};
+
+			function nextSync(interval) {
+				if(!stop) {
+					$timeout(sync, interval || params.interval);
+				}
+			}
+
+			function runWatchers(data) {
+				watchers.forEach(function (fun) {
+					fun(object);
+				});
+			}
+
+			var errorCallback = null;
+			if(angular.isFunction(params.onErrorRetry)) {
+				errorCallback = function(err) { params.onErrorRetry(object, err); };
+			} else if(params.onErrorRetry) {
+				errorCallback = function(err) { nextSync(); };
+			}
 
 			function sync() {
 
@@ -152,14 +192,9 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 					params.filter_domain,
 					params.limit,
 					object)
-				.then(function () { 
-					if (!stop)
-						$timeout(sync, params.interval);
-				}).then(function(data) {
-					watchers.forEach(function (fun) {
-						fun(object);
-					});
-				});
+				.then(nextSync)
+				.then(runWatchers)
+				.catch(errorCallback);
 			}
 			sync();
 
