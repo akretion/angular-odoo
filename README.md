@@ -35,7 +35,7 @@ Include
 Add the script to your page : 
 
 ```html
-&gt;script src="path/to/angular-odoo/dist/odoo.js"&lt;&gt;/script&lt;
+<script src="path/to/angular-odoo/dist/odoo.js"></script>
 ```
 
 Add the module __odoo__ to your applicaiton:
@@ -52,6 +52,7 @@ Add __jsonRpc__ as a dependency.
 angular.module('loginCtrl', ['$scope', 'jsonRpc', function($scope, jsonRpc) {
 	
 	jsonRpc.getDbList().then(function (result) {
+		//get databases list
 		$scope.dbs = result;
 	});
 
