@@ -92,3 +92,12 @@ Tests
 ===
 
 There is some tests in jsonRpc.spec.js
+
+
+Contributors
+===
+
+* [Hparfr](https://github.com/hparfr)
+* [Sebastienbeau](https://github.com/sebastienbeau)
+* [Guewen](https://github.com/guewen)
+* [FranzPoize](https://github.com/FranzPoize) 
