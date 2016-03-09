@@ -236,13 +236,15 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 					method: 'call',
 					params: params, //payload
 				};
+				var headers = {
+					'Content-Type': 'application/json',
+					'X-Openerp-Session-Id': cookies.get_sessionId()
+				}
 				return {
 					'method' : 'POST',
 					'url' : odooRpc.odoo_server + url,
 					'data' : JSON.stringify(json_data),
-					'headers': {
-						'Content-Type' : 'application/json'
-					},
+					'headers': headers,
 					'id': ("r" + odooRpc.uniq_id_counter),
 				};
 			}
