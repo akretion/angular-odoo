@@ -1,7 +1,8 @@
 'use strict';
 
 var gulp = require('gulp');
-
+var bump = require('gulp-bump');
+var git  = require('gulp-git');
 var paths = gulp.paths;
 
 var $ = require('gulp-load-plugins')({
@@ -31,6 +32,25 @@ gulp.task('build-lib-min', [], function () {
      .pipe($.concat('odoo.min.js'))
      .pipe(gulp.dest(paths.dist + '/'))
      .pipe($.size({ title: paths.dist + '/', showFiles: true }));
+});
+
+gulp.task('bump', function() {
+  gulp.src(['./bower.json', './package.json'])
+    .pipe(bump())
+    .pipe(git.add())
+    .pipe(gulp.dest('./'));
+});
+
+gulp.task('tag', function() {
+  var pkg = require('../package.json');
+  var message = 'Release ' + pkg.version;
+  return gulp.src('./')
+    .pipe(git.add())
+    .pipe(git.commit(message))
+    .on('end', function (e) {
+      console.log('on end', e);
+      git.tag(pkg.version, message)
+    });
 });
 
 gulp.task('clean', function (done) {
