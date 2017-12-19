@@ -4,8 +4,9 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 	this.odooRpc = {
 		odoo_server: "",
 		uniq_id_counter: 0,
+		odooVersion: '',
 		context: {'lang': 'fr_FR'},
-		shouldManageSessionId: false, //try without first
+		shouldManageSessionId: false, //try without first for v7
 		errorInterceptors: []
 	};
 
@@ -97,7 +98,9 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 		};
 
 		odooRpc.getDbList = function() {
-			return odooRpc.sendRequest('/web/database/get_list', {});
+			if (odooRpc.odooVersion[0] == "7" || odooRpc.odooVersion[0] == "8")
+				return odooRpc.sendRequest('/web/database/get_list', {});
+			return odooRpc.callJson('db', 'list', {});
 		};
 		odooRpc.syncDataImport = function(model, func_key, base_domain, filter_domain, limit, object) {
 			return odooRpc.call(model, 'get_sync_data', [
@@ -216,6 +219,14 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			return odooRpc.sendRequest('/web/dataset/call_kw', params);
 		};
 
+		odooRpc.callJson = function(service, method, args) {
+			var params = {
+				service: service,
+				method: method,
+				args: args,
+			};
+			return odooRpc.sendRequest('/jsonrpc', params);
+		}
 
 		/**
 		* base function
@@ -340,7 +351,8 @@ angular.module('odoo').provider('jsonRpc', function jsonRpcProvider() {
 			function preflight() {
 				//preflightPromise is a kind of cache and is set only if the request succeed
 				return preflightPromise || http('/web/webclient/version_info', {}).then(function (reason) {
-					odooRpc.shouldManageSessionId = (reason.result.server_serie < "8"); //server_serie is string like "7.01"
+					odooRpc.odooVersion = reason.result.server_serie;
+					odooRpc.shouldManageSessionId = (odooRpc.odooVersion[0] == "7"); //server_serie is string like "7.01"
 					preflightPromise = $q.when(); //runonce
 				});
 			}
